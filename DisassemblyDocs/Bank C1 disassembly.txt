@@ -8068,15 +8068,15 @@ C1/3E7F:	9D2187  	STA $8721,X
 C1/3E82:	E8      	INX 
 C1/3E83:	E09801  	CPX #$0198
 C1/3E86:	D0EE    	BNE $3E76
-C1/3E88:	AD0020  	LDA $2000
+C1/3E88:	AD0020  	LDA $2000		load mold number
 C1/3E8B:	8522    	STA $22
 C1/3E8D:	A90C    	LDA #$0C
 C1/3E8F:	8524    	STA $24
-C1/3E91:	20D918  	JSR $18D9
+C1/3E91:	20D918  	JSR $18D9		$26 = mold * 12
 C1/3E94:	A526    	LDA $26
 C1/3E96:	AA      	TAX 
 C1/3E97:	BFA4C4C2	LDA $C2C4A4,X
-C1/3E9B:	8510    	STA $10
+C1/3E9B:	8510    	STA $10			Store the first pointer for monster formation Mold X
 C1/3E9D:	BFA5C4C2	LDA $C2C4A5,X
 C1/3EA1:	8511    	STA $11
 C1/3EA3:	A9C2    	LDA #$C2
@@ -8084,39 +8084,41 @@ C1/3EA5:	8512    	STA $12
 C1/3EA7:	A25982  	LDX #$8259
 C1/3EAA:	8614    	STX $14
 C1/3EAC:	A906    	LDA #$06
-C1/3EAE:	8516    	STA $16
-C1/3EB0:	C220    	REP #$20
-C1/3EB2:	A710    	LDA [$10]
+C1/3EAE:	8516    	STA $16			Enemy number
+C1/3EB0:	C220    	REP #$20		Loop for every enemy
+C1/3EB2:	A710    	LDA [$10]		Load horizontal and vertical offset of start of image * 32
 C1/3EB4:	8518    	STA $18
 C1/3EB6:	E610    	INC $10
 C1/3EB8:	E610    	INC $10
 C1/3EBA:	7B      	TDC 
 C1/3EBB:	E220    	SEP #$20
 C1/3EBD:	A400    	LDY $00
-C1/3EBF:	A710    	LDA [$10]
+C1/3EBF:	A710    	LDA [$10]		list of the 0-15 grid positions for the
+										32x32 subsprites that compose the monster image.
+										Terminates by 0xFF
 C1/3EC1:	302C    	BMI $3EEF
 C1/3EC3:	0A      	ASL A
 C1/3EC4:	0A      	ASL A
 C1/3EC5:	AA      	TAX 
-C1/3EC6:	BFE7B9C2	LDA $C2B9E7,X
+C1/3EC6:	BFE7B9C2	LDA $C2B9E7,X	horizontal grid position * 32 of monster in mold
 C1/3ECA:	38      	SEC 
-C1/3ECB:	E518    	SBC $18
-C1/3ECD:	9114    	STA ($14),Y
+C1/3ECB:	E518    	SBC $18			subtract horizontal grid offset
+C1/3ECD:	9114    	STA ($14),Y		stores to #$8259+Y
 C1/3ECF:	C8      	INY 
-C1/3ED0:	BFE8B9C2	LDA $C2B9E8,X
+C1/3ED0:	BFE8B9C2	LDA $C2B9E8,X	vertical grid position * 32 of monster in mold
 C1/3ED4:	38      	SEC 
-C1/3ED5:	E519    	SBC $19
-C1/3ED7:	9114    	STA ($14),Y
+C1/3ED5:	E519    	SBC $19			subtract vertical grid offset
+C1/3ED7:	9114    	STA ($14),Y		stores to #$8259+Y
 C1/3ED9:	C8      	INY 
-C1/3EDA:	BFE9B9C2	LDA $C2B9E9,X
-C1/3EDE:	9114    	STA ($14),Y
+C1/3EDA:	BFE9B9C2	LDA $C2B9E9,X	position's offset in terms of 8x8-pixel tile units
+C1/3EDE:	9114    	STA ($14),Y		stores to #$8259+Y
 C1/3EE0:	C8      	INY 
-C1/3EE1:	BFEAB9C2	LDA $C2B9EA,X
-C1/3EE5:	9114    	STA ($14),Y
+C1/3EE1:	BFEAB9C2	LDA $C2B9EA,X	??? (always 01)
+C1/3EE5:	9114    	STA ($14),Y		stores to #$8259+Y
 C1/3EE7:	C8      	INY 
 C1/3EE8:	A610    	LDX $10
 C1/3EEA:	E8      	INX 
-C1/3EEB:	8610    	STX $10
+C1/3EEB:	8610    	STX $10			loop for all grid positions
 C1/3EED:	80D0    	BRA $3EBF
 C1/3EEF:	9114    	STA ($14),Y
 C1/3EF1:	C220    	REP #$20
@@ -8128,7 +8130,7 @@ C1/3EFB:	8514    	STA $14
 C1/3EFD:	7B      	TDC 
 C1/3EFE:	E220    	SEP #$20
 C1/3F00:	C616    	DEC $16
-C1/3F02:	D0AC    	BNE $3EB0
+C1/3F02:	D0AC    	BNE $3EB0		End of loop for every enemy
 C1/3F04:	A600    	LDX $00
 C1/3F06:	BD5982  	LDA $8259,X
 C1/3F09:	9DF183  	STA $83F1,X
