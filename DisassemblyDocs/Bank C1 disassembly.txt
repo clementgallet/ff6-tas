@@ -4827,7 +4827,7 @@ C1/2518:	7B      	TDC
 C1/2519:	E220    	SEP #$20
 C1/251B:	BF0170D2	LDA $D27001,X	(Monster visual specs)
 C1/251F:	2980    	AND #$80
-C1/2521:	8DAC81  	STA $81AC
+C1/2521:	8DAC81  	STA $81AC		Store color depth in bit 7
 C1/2524:	BF0270D2	LDA $D27002,X	(Monster visual specs)
 C1/2528:	4A      	LSR A
 C1/2529:	0DAC81  	ORA $81AC
