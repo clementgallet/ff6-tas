@@ -1717,68 +1717,69 @@ C1/0E82:	7B      	TDC
 C1/0E83:	E220    	SEP #$20
 C1/0E85:	60      	RTS
  
-C1/0E86:	A20F00  	LDX #$000F		(C1/1011, C1/91D1, C1/9366)
-C1/0E89:	8622    	STX $22		(Animation Script pointer)
-C1/0E8B:	AEE011  	LDX $11E0
-C1/0E8E:	8624    	STX $24
-C1/0E90:	C220    	REP #$20
-C1/0E92:	20F418  	JSR $18F4
-C1/0E95:	E220    	SEP #$20
-C1/0E97:	A626    	LDX $26
-C1/0E99:	BF0E62CF	LDA $CF620E,X	(Enemies that are bosses)
-C1/0E9D:	8528    	STA $28
-C1/0E9F:	C220    	REP #$20
-C1/0EA1:	BF0062CF	LDA $CF6200,X
-C1/0EA5:	EB      	XBA 
-C1/0EA6:	4A      	LSR A
-C1/0EA7:	4A      	LSR A
-C1/0EA8:	4A      	LSR A
-C1/0EA9:	4A      	LSR A
-C1/0EAA:	4A      	LSR A
-C1/0EAB:	4A      	LSR A
-C1/0EAC:	293F00  	AND #$003F
-C1/0EAF:	8510    	STA $10
-C1/0EB1:	7B      	TDC 
-C1/0EB2:	E220    	SEP #$20
-C1/0EB4:	BF0062CF	LDA $CF6200,X
-C1/0EB8:	4A      	LSR A
-C1/0EB9:	4A      	LSR A
-C1/0EBA:	4A      	LSR A
-C1/0EBB:	4A      	LSR A
-C1/0EBC:	8D0020  	STA $2000
-C1/0EBF:	BF0162CF	LDA $CF6201,X	(Enemies present in formation)
-C1/0EC3:	293F    	AND #$3F
-C1/0EC5:	8DAA61  	STA $61AA
-C1/0EC8:	7B      	TDC 
-C1/0EC9:	A8      	TAY 
-C1/0ECA:	4628    	LSR $28
-C1/0ECC:	2A      	ROL A
-C1/0ECD:	2901    	AND #$01
-C1/0ECF:	852A    	STA $2A
-C1/0ED1:	BF0862CF	LDA $CF6208,X	(Enemy (X+1) position)
-C1/0ED5:	29F0    	AND #$F0
-C1/0ED7:	4A      	LSR A
-C1/0ED8:	99C380  	STA $80C3,Y		(Store enemy's X-coord.)
-C1/0EDB:	7B      	TDC 
-C1/0EDC:	99C480  	STA $80C4,Y
-C1/0EDF:	BF0862CF	LDA $CF6208,X	(Enemy (X+1) position)
-C1/0EE3:	290F    	AND #$0F
-C1/0EE5:	0A      	ASL A
-C1/0EE6:	0A      	ASL A
-C1/0EE7:	0A      	ASL A
-C1/0EE8:	99CF80  	STA $80CF,Y
-C1/0EEB:	7B      	TDC 
-C1/0EEC:	99D080  	STA $80D0,Y
-C1/0EEF:	4610    	LSR $10
-C1/0EF1:	2A      	ROL A
-C1/0EF2:	2901    	AND #$01
-C1/0EF4:	99F480  	STA $80F4,Y
-C1/0EF7:	C8      	INY 
-C1/0EF8:	C8      	INY 
-C1/0EF9:	E8      	INX 
-C1/0EFA:	C00C00  	CPY #$000C
-C1/0EFD:	D0CB    	BNE $0ECA
-C1/0EFF:	60      	RTS
+C1/0E86: A2 0F 00     LDX #$000F     
+C1/0E89: 86 22        STX $22
+C1/0E8B: AE E0 11     LDX $11E0      (get enemy group #)
+C1/0E8E: 86 24        STX $24
+C1/0E90: C2 20        REP #$20       (set 16-bit accumulator)
+C1/0E92: 20 F4 18     JSR $18F4      (32-bit $26-$29 = 16-bit $24 * 8-bit $22)
+C1/0E95: E2 20        SEP #$20       (set 8-bit accumulator)
+C1/0E97: A6 26        LDX $26
+C1/0E99: BF 0E 62 CF  LDA $CF620E,X  (get boss switches byte from enemy group template)
+C1/0E9D: 85 28        STA $28
+C1/0E9F: C2 20        REP #$20       (set 16-bit accumulator)
+C1/0EA1: BF 00 62 CF  LDA $CF6200,X  (get group mould byte and enemy presence byte)
+C1/0EA5: EB           XBA            (get mould out of way, we're focusing on presence)
+C1/0EA6: 4A           LSR 
+C1/0EA7: 4A           LSR 
+C1/0EA8: 4A           LSR 
+C1/0EA9: 4A           LSR 
+C1/0EAA: 4A           LSR 
+C1/0EAB: 4A           LSR 
+C1/0EAC: 29 3F 00     AND #$003F     (only acknowledge presence of 1st six enemies)
+C1/0EAF: 85 10        STA $10
+C1/0EB1: 7B           TDC 
+C1/0EB2: E2 20        SEP #$20       (set 8-bit accumulator)
+C1/0EB4: BF 00 62 CF  LDA $CF6200,X  (get mould index)
+C1/0EB8: 4A           LSR 
+C1/0EB9: 4A           LSR 
+C1/0EBA: 4A           LSR 
+C1/0EBB: 4A           LSR            (move from top nibble into bottom)
+C1/0EBC: 8D 00 20     STA $2000      (store mould)
+C1/0EBF: BF 01 62 CF  LDA $CF6201,X  (enemy presence byte)
+C1/0EC3: 29 3F        AND #$3F       (only check for 6 enemies)
+C1/0EC5: 8D AA 61     STA $61AA
+C1/0EC8: 7B           TDC          
+C1/0EC9: A8           TAY            (clear Accumulator and Y)
+C1/0ECA: 46 28        LSR $28    
+C1/0ECC: 2A           ROL          
+C1/0ECD: 29 01        AND #$01       (get current bottom bit of boss switches)
+C1/0ECF: 85 2A        STA $2A
+C1/0ED1: BF 08 62 CF  LDA $CF6208,X  (get enemy position)
+C1/0ED5: 29 F0        AND #$F0       (isolate X coordinate)
+C1/0ED7: 4A           LSR            (top nibble / 2, or X * 8)
+C1/0ED8: 99 C3 80     STA $80C3,Y    (store X coordinate)
+C1/0EDB: 7B           TDC 
+C1/0EDC: 99 C4 80     STA $80C4,Y    (top byte of coordinate is 0)
+C1/0EDF: BF 08 62 CF  LDA $CF6208,X  (get enemy position)
+C1/0EE3: 29 0F        AND #$0F       (isolate Y coordinate)
+C1/0EE5: 0A           ASL 
+C1/0EE6: 0A           ASL 
+C1/0EE7: 0A           ASL            (Y * 8)
+C1/0EE8: 99 CF 80     STA $80CF,Y    (store Y coordinate)
+C1/0EEB: 7B           TDC 
+C1/0EEC: 99 D0 80     STA $80D0,Y    (top byte of coordinate is 0)
+C1/0EEF: 46 10        LSR $10
+C1/0EF1: 2A           ROL 
+C1/0EF2: 29 01        AND #$01
+C1/0EF4: 99 F4 80     STA $80F4,Y
+C1/0EF7: C8           INY 
+C1/0EF8: C8           INY 
+C1/0EF9: E8           INX 
+C1/0EFA: C0 0C 00     CPY #$000C     (have we passed 6th monster yet?)
+C1/0EFD: D0 CB        BNE $0ECA      (if not, loop for all enemies)
+C1/0EFF: 60           RTS 
+
  
 C1/0F00:	C220    	REP #$20		(from C1/1E64, C1/1E79)
 C1/0F02:	7B      	TDC 
