@@ -33,6 +33,24 @@ end
 -- list of available aiming bytes
 aiming_bytes = {0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0021, 0x0029, 0x0041, 0x0043, 0x0061, 0x0069, 0x006A, 0x006E}
 
+-- print_header
+header = {"Spell setup"}
+for i = 0,255 do
+  table.insert(header, string.format("Item slot %d", i))
+end
+for i = 1,4 do
+  table.insert(header, string.format("Char %d right arm", i))
+end
+for i = 1,4 do
+  table.insert(header, string.format("Char %d left arm", i))
+end
+for c = 1,4 do
+  for i = 0,78 do
+    table.insert(header, string.format("Char %d magic slot %d", c, i))
+  end
+end
+
+
 -- -------------------------------------------------------------------------------------------------
 -- The following commented code is to computed formation dependent memory. For now, we don't need it
 -- -------------------------------------------------------------------------------------------------
@@ -116,7 +134,7 @@ aiming_bytes = {0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0021, 0x0029, 0x0041, 
 mold_shifting = {} -- $8259
 
 -- for mold_number = 0, 12 do
-mold_number = 1
+mold_number = 0
 
 
 
@@ -321,7 +339,7 @@ mold_number = 1
 	
 	-- Function C2/546E construct in-battle Item menu, equipment sub-menus, and possessed Tools bitfield, based off of equipped and possessed items.
 	item_list = {}
-	for item_slot = 0,255 do
+	for item_slot = 0,263 do
 	  item_offset = item_slot*5+0x2686
       if write_log[item_offset] ~= nil then -- item id
 	    if write_log[item_offset+3] ~= nil then -- item quantity
@@ -334,6 +352,36 @@ mold_number = 1
 	  end
 	end
 
+	-- Magic and Lore list is stored in $208E, $21CA, $2306 and $2442 for each character
+	for magic_slot = 0,(79*4-1) do
+	  magic_offset = 0x208E + 4 * magic_slot
+	  if write_log[magic_offset] ~= nil then -- magic id
+	  
+	    magic_id = write_log[magic_offset] -- TODO: find a relevent name
+	    if write_log[magic_offset+1] ~= nil then -- magic availability
+		  magic_availability = ""
+		else
+		  magic_availability = bizstring.hex(write_log[magic_offset+1])
+		end
+		
+	    if write_log[magic_offset+2] ~= nil then -- magic aiming
+		  magic_aiming = ""
+		else
+		  magic_aiming = bizstring.hex(write_log[magic_offset+2])
+		end
+		
+	    if write_log[magic_offset+3] ~= nil then -- magic cost
+		  magic_cost = ""
+		else
+		  magic_cost = bizstring.hex(write_log[magic_offset+3])
+		end
+		
+	    magic_list[magic_slot+1] = string.format("(%d/%s/%s/%s)", magic_id, magic_availability, magic_aiming, magic_cost)
+	  else
+	    magic_list[magic_slot+1] = ""
+	end
+
+	
 	console.writeline(string.format("%s;%s", bizstring.hex(monster_id), table.concat(item_list,";")))
 	
 	end -- end if setup is working
