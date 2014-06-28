@@ -2,9 +2,12 @@
 -- Begin of configuration
 -------------------------
 
+MOLD_NUMBER = 8
+
+DISPLAY_COMMANDS = true
 DISPLAY_ITEMS = false
 DISPLAY_MAGIC = false
-DISPLAY_ENGULF = true
+DISPLAY_ENGULF = false
 DISPLAY_WRITE = false
 
 -------------------------
@@ -64,11 +67,30 @@ getmagicname = function(id)
 	return readsnesstring(0x26F831+10*id, 10)
 end
 
+getcommandname = function(id)
+	if id < 32 then -- standard command
+	  return readsnesstring(0x18CEA0+7*id, 7)
+	end
+	return "???" -- unknown command
+end
+
+
 -- list of available aiming bytes
 aiming_bytes = {0x0001, 0x0003, 0x0004, 0x0021, 0x0029, 0x0041, 0x0061, 0x006A}
 
 -- print_header
+
 header = {"Spell setup"}
+
+if DISPLAY_COMMANDS then
+for c = 1,4 do
+  for i = 1,4 do
+    table.insert(header, string.format("Char %d command %d", c, i))
+  end
+end
+end
+
+
 if DISPLAY_ITEMS then
 for i = 0,255 do
   table.insert(header, string.format("Item slot %d", i))
@@ -177,24 +199,19 @@ console.writeline(table.concat(header,";"))
 -- End of formation dependent computations
 -- -------------------------------------------------------------------------------------------------
 
-mold_shifting = {} -- $8259
-
--- for mold_number = 0, 12 do
-mold_number = 3
-
-
 
   ---------------------------------------------------------------------------
   -- Function C1/3E72: Fill the sprite offset ($8257+) for a specific mold
   ---------------------------------------------------------------------------
 
+  mold_shifting = {} -- $8259
   
   -- zeroing the array
   for i = 0,0x197 do
     mold_shifting[i] = 0
   end
 
-  mold_offset = 0xC * mold_number -- $26
+  mold_offset = 0xC * MOLD_NUMBER -- $26
   mold_pointer = memory.read_u16_le(0x02C4A4 + mold_offset); -- $10-$12
 
   for enemy_slot = 0,5 do -- 6 - $16
@@ -382,9 +399,36 @@ mold_number = 3
 	-- Extract and format relevent writes from the write log
 	---------------------------------------------------------------------------
 	
+	string_line = {bizstring.hex(monster_id)}
 	
+	-- Function C2/532C fills battle commands from character commands and optional modifications by relics, etc. Starts at $202E and takes 3 bytes per slot: id, availability and aiming
+	if DISPLAY_COMMANDS then
+	for command_slot = 0,15 do
+	  command_offset = 0x202E + 3 * command_slot
+	  if write_log[command_offset] ~= nil or write_log[command_offset+2] ~= nil then
+	    if write_log[command_offset] ~= nil then
+	      command_name = getcommandname(write_log[command_offset]) .. "(" .. write_log[command_offset]
+		else
+	      command_name = "("
+		end
+	    if write_log[command_offset+1] ~= nil then
+	      command_availability = bizstring.hex(write_log[command_offset+1])
+		else
+	      command_availability = ""
+		end
+	    if write_log[command_offset+2] ~= nil then
+	      command_aiming = bizstring.hex(write_log[command_offset+2])
+		else
+	      command_aiming = ""
+		end
+		table.insert(string_line, string.format("%s/%s/%s)", command_name, command_availability, command_aiming))
+	  else
+		table.insert(string_line, "")
+	  end
+	end
+	end
+	  
 	-- Function C2/546E construct in-battle Item menu, equipment sub-menus, and possessed Tools bitfield, based off of equipped and possessed items.
-	item_list = {}
 	if DISPLAY_ITEMS then
 	for item_slot = 0,263 do
 	  item_offset = item_slot*5+0x2686
@@ -414,16 +458,15 @@ mold_number = 3
 		else
 		  item_equipability = ""
 		end
-		item_list[item_slot+1] = string.format("%s%s (%s/%s/%s)", item_id, item_quantity, item_flags, item_targeting, item_equipability)
+		table.insert(string_line, string.format("%s%s (%s/%s/%s)", item_id, item_quantity, item_flags, item_targeting, item_equipability))
 	  else
-		item_list[item_slot+1] = "" -- No item
+		table.insert(string_line, "") -- No item
 	  end
 	end
 	end
 	
 	
 	-- Magic and Lore list is stored in $208E, $21CA, $2306 and $2442 for each character
-    magic_list = {}
 	if DISPLAY_MAGIC then
 	for magic_slot = 0,(79*4-1) do
 	  magic_offset = 0x208E + 4 * magic_slot
@@ -448,22 +491,21 @@ mold_number = 3
 		  magic_cost = bizstring.hex(write_log[magic_offset+3])
 		end
 		
-	    magic_list[magic_slot+1] = string.format("%s (%s/%s/%s)", magic_name, magic_availability, magic_aiming, magic_cost)
+	    table.insert(string_line, string.format("%s (%s/%s/%s)", magic_name, magic_availability, magic_aiming, magic_cost))
 	  else
-	    magic_list[magic_slot+1] = ""
+	    table.insert(string_line, "")
 	  end
 	end
 	end
 	
 	-- Engulf variables include $3A8A (which characters have been engulfed), $3A8D (active characters at the beginning of the battle) and $3EBC (bit 7 is set if all party engulfed).
-	engulf_list = {}
 	engulf_addresses = {0x3A8A, 0x3A8D, 0x3EBC}
 	if DISPLAY_ENGULF then
 	  for i = 1,3 do
 	    if write_log[engulf_addresses[i]] ~= nil then
-	      engulf_list[i] = bizstring.hex(write_log[engulf_addresses[i]])
+	      table.insert(string_line, bizstring.hex(write_log[engulf_addresses[i]]))
 		else
-	      engulf_list[i] = ""
+	      table.insert(string_line, "")
 		end
 	  end
 	end
@@ -481,11 +523,9 @@ mold_number = 3
 	end
 
 	
-	console.writeline(string.format("%s;%s;%s;%s", bizstring.hex(monster_id), table.concat(item_list,";"), table.concat(magic_list,";"), table.concat(engulf_list,";")))
+	console.writeline(table.concat(string_line,";"))
 	
 	end -- end if setup is working
 
    end -- end for spell availability
  end -- end for aiming byte
-
--- end	-- end for mold
