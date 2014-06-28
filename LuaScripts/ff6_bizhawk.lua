@@ -78,7 +78,7 @@ drawgauge = function(c,m,col)
 	if m == 0 then m = 1 end
 	local g = c*gw/m
 	horline(gx,gy,gx+g,col)
-	horline(gx+g,gy,gx+gw,0xff000000)
+	horline(gx+g,gy,gx+gw,0x7f000000)
 	gy = gy-1
 end
 
@@ -138,19 +138,19 @@ end
 -- This is then surrounded by black border.
 print_element = function(x,y,elem)
 	-- first draw the border
-	horline(x, y, x+4, 0xff404040)
-	vertline(x+4, y, y+4, 0xff404040)
-	vertline(x, y, y+4, 0xff404040)
-	horline(x, y+4, x+4, 0xff404040)
+	horline(x, y, x+4, 0x7f404040)
+	vertline(x+4, y, y+4, 0x7f404040)
+	vertline(x, y, y+4, 0x7f404040)
+	horline(x, y+4, x+4, 0x7f404040)
 	-- now draw the elements
 	local x,y=x+1,y+1
 	putpix = function(x,y,b,c)
-		if b == 1 then drawpixel(x,y,c) else drawpixel(x,y,0xff000000) end
+		if b == 1 then drawpixel(x,y,c) else drawpixel(x,y,0x7f000000) end
 	end
 	cols = {
-		0xffff0000,0xff0000ff,0xffffff00,
-		0xff00ff00,0xff808080,0xffffffff,
-		0xffa08000,0xff0000ff,0xff000000
+		0x7fff0000,0x7f0000ff,0x7fffff00,
+		0x7f00ff00,0x7f808080,0x7fffffff,
+		0x7fa08000,0x7f0000ff,0x7f000000
 	}
 	for i = 1, 9 do
 		dx, dy = (i-1)%3, math.floor((i-1)/3)
@@ -199,7 +199,6 @@ last_position_whole = true
 while true do
 	-- Are we in battle?
 	-- Determine if we're in battle, on the world map, in a town/dungeon, or in the menu
-	gui.drawRectangle(1,1,100,100,0xFF888888, 0x07FFF0000)
 	if bit.band(mainmemory.readbyte(0x11fd), 0x2) == 0x2 then
 		mode_cave = false
 		mode_battle = true
@@ -268,9 +267,9 @@ while true do
 
 			-- Print the gauges
 			startgauge(x,y,xsize)
-			drawgauge(mp, mmp, 0xff0000ff)
-			drawgauge(hp, mhp, 0xff00ff00)
-			drawgauge(gauge, 0x10000, 0xffff0000)
+			drawgauge(mp, mmp, 0x7f0000ff)
+			drawgauge(hp, mhp, 0x7f00ff00)
+			drawgauge(gauge, 0x10000, 0x7fff0000)
 			by = gy
 			gui.text(x-16, by-8, string.format("%2d",level))
 			print_element(x, by-6, absorb)
@@ -388,7 +387,7 @@ while true do
 			flag = flag % (2^(bit_index+1))
 			flag = math.floor(flag/ 2^bit_index)
 			-- flag is now 0 if not taken and 1 if taken
-			if flag == 0 then color = 0xff00ff00 else color = 0xffff0000 end
+			if flag == 0 then color = 0x7f00ff00 else color = 0x7fff0000 end
 
 			-- get the real x,y position, using the fact that
 			-- each square is 0x10 big.
@@ -416,8 +415,8 @@ while true do
 			area2 = hmm % 0x200
 			-- is it to the same area? If so, color it
 			-- light blue. Else make it normal blue.
-			if area2 == area then color = 0xff8080ff
-			else color = 0xff0000ff end
+			if area2 == area then color = 0x7f8080ff
+			else color = 0x7f0000ff end
 
 			-- get the real x,y position, using the fact that
 			-- each square is 0x10 big.
@@ -445,9 +444,9 @@ while true do
 			if dxi >= 0x80 then dxi, dyi = 0, dxi % 0x80 end
 			-- is it to the same area? If so, color it
 			-- light blue. Else make it normal blue.
-			if area2 == area then color = 0xff8080ff
-			elseif area2 == 0x1ff then color = 0xffb0b0ff
-			else color = 0xff0000ff end
+			if area2 == area then color = 0x7f8080ff
+			elseif area2 == 0x1ff then color = 0x7fb0b0ff
+			else color = 0x7f0000ff end
 
 			-- get the real x,y position, using the fact that
 			-- each square is 0x10 big.
@@ -469,7 +468,7 @@ while true do
 			yi     = memory.readbyte(table+i+1)
 			react1 = memory.read_u16_le(table+i+2)
 			react2 = memory.readbyte(table+i+4)
-			color = 0xffffff00
+			color = 0x7fffff00
 
 			-- get the real x,y position, using the fact that
 			-- each square is 0x10 big.

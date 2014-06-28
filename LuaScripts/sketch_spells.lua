@@ -1,3 +1,16 @@
+-------------------------
+-- Begin of configuration
+-------------------------
+
+DISPLAY_ITEMS = false
+DISPLAY_MAGIC = false
+DISPLAY_ENGULF = true
+DISPLAY_WRITE = false
+
+-------------------------
+-- End of configuration
+-------------------------
+
 memory.usememorydomain("CARTROM")
 
 min = function(a,b) if a < b then return a else return b end end
@@ -30,11 +43,33 @@ getitemname = function(id)
 	return readsnesstring(0x12b300+0xd*id+1,12)
 end
 
+getmagicname = function(id)
+	if id < 0x36 then -- magic
+	  return readsnesstring(0x26F567+7*id, 7)
+	end
+	if id < 0x51 then -- esper
+	  id = id - 0x36
+	  return readsnesstring(0x26F6E1+8*id, 8)
+	end
+	if id < 0x55 then -- skean
+	  id = id - 0x51
+	  return readsnesstring(0x26F7B9+10*id, 10)
+	end
+	if id < 0x5D then -- sword tech, totally different place
+	  id = id - 0x55
+	  return readsnesstring(0x0F3C40+12*id, 12)
+	end
+	-- blitz, dances, slots, magitek, lores, enemy attacks, desperation attacks, miscellaneous attacks
+    id = id - 0x5D
+	return readsnesstring(0x26F831+10*id, 10)
+end
+
 -- list of available aiming bytes
-aiming_bytes = {0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0021, 0x0029, 0x0041, 0x0043, 0x0061, 0x0069, 0x006A, 0x006E}
+aiming_bytes = {0x0001, 0x0003, 0x0004, 0x0021, 0x0029, 0x0041, 0x0061, 0x006A}
 
 -- print_header
 header = {"Spell setup"}
+if DISPLAY_ITEMS then
 for i = 0,255 do
   table.insert(header, string.format("Item slot %d", i))
 end
@@ -44,12 +79,23 @@ end
 for i = 1,4 do
   table.insert(header, string.format("Char %d left arm", i))
 end
+end
+
+if DISPLAY_MAGIC then
 for c = 1,4 do
   for i = 0,78 do
     table.insert(header, string.format("Char %d magic slot %d", c, i))
   end
 end
+end
 
+if DISPLAY_ENGULF then
+  table.insert(header, "$3A8A")
+  table.insert(header, "$3A8D")
+  table.insert(header, "$3EBC")
+end
+
+console.writeline(table.concat(header,";"))
 
 -- -------------------------------------------------------------------------------------------------
 -- The following commented code is to computed formation dependent memory. For now, we don't need it
@@ -134,7 +180,7 @@ end
 mold_shifting = {} -- $8259
 
 -- for mold_number = 0, 12 do
-mold_number = 0
+mold_number = 3
 
 
 
@@ -171,8 +217,8 @@ mold_number = 0
   end
   
 --  console.writeline(mold_shifting)
-  
- for ai = 1, 13 do -- aiming byte
+
+ for ai = 1, 8 do -- aiming byte
    for sa = 0, 255 do -- spell availability
     
     monster_id = aiming_bytes[ai] * 256 + sa
@@ -335,54 +381,107 @@ mold_number = 0
     ---------------------------------------------------------------------------
 	-- Extract and format relevent writes from the write log
 	---------------------------------------------------------------------------
-
+	
 	
 	-- Function C2/546E construct in-battle Item menu, equipment sub-menus, and possessed Tools bitfield, based off of equipped and possessed items.
 	item_list = {}
+	if DISPLAY_ITEMS then
 	for item_slot = 0,263 do
 	  item_offset = item_slot*5+0x2686
-      if write_log[item_offset] ~= nil then -- item id
-	    if write_log[item_offset+3] ~= nil then -- item quantity
-		  item_list[item_slot+1] = string.format("%s * %d", getitemname(write_log[item_offset]), write_log[item_offset+3])
+      if write_log[item_offset] ~= nil or write_log[item_offset+4] ~= nil then
+	    if write_log[item_offset] ~= nil then -- item id
+		  item_id = getitemname(write_log[item_offset])
 		else
-		  item_list[item_slot+1] = string.format("%s", getitemname(write_log[item_offset]))
+		  item_id = ""
 		end
+	    if write_log[item_offset+1] ~= nil then -- item flags
+		  item_flags = bizstring.hex(write_log[item_offset+1])
+		else
+		  item_flags = ""
+		end
+	    if write_log[item_offset+2] ~= nil then -- item targeting
+		  item_targeting = bizstring.hex(write_log[item_offset+2])
+		else
+		  item_targeting = ""
+		end
+	    if write_log[item_offset+3] ~= nil then -- item quantity
+		  item_quantity = string.format(" * %d",write_log[item_offset+3])
+		else
+		  item_quantity = ""
+		end
+	    if write_log[item_offset+4] ~= nil then -- item targeting
+		  item_equipability = bizstring.hex(write_log[item_offset+4])
+		else
+		  item_equipability = ""
+		end
+		item_list[item_slot+1] = string.format("%s%s (%s/%s/%s)", item_id, item_quantity, item_flags, item_targeting, item_equipability)
 	  else
 		item_list[item_slot+1] = "" -- No item
 	  end
 	end
-
+	end
+	
+	
 	-- Magic and Lore list is stored in $208E, $21CA, $2306 and $2442 for each character
+    magic_list = {}
+	if DISPLAY_MAGIC then
 	for magic_slot = 0,(79*4-1) do
 	  magic_offset = 0x208E + 4 * magic_slot
 	  if write_log[magic_offset] ~= nil then -- magic id
 	  
-	    magic_id = write_log[magic_offset] -- TODO: find a relevent name
-	    if write_log[magic_offset+1] ~= nil then -- magic availability
+	    magic_name = getmagicname(write_log[magic_offset])
+	    if write_log[magic_offset+1] == nil then -- magic availability
 		  magic_availability = ""
 		else
 		  magic_availability = bizstring.hex(write_log[magic_offset+1])
 		end
 		
-	    if write_log[magic_offset+2] ~= nil then -- magic aiming
+	    if write_log[magic_offset+2] == nil then -- magic aiming
 		  magic_aiming = ""
 		else
 		  magic_aiming = bizstring.hex(write_log[magic_offset+2])
 		end
 		
-	    if write_log[magic_offset+3] ~= nil then -- magic cost
+	    if write_log[magic_offset+3] == nil then -- magic cost
 		  magic_cost = ""
 		else
 		  magic_cost = bizstring.hex(write_log[magic_offset+3])
 		end
 		
-	    magic_list[magic_slot+1] = string.format("(%d/%s/%s/%s)", magic_id, magic_availability, magic_aiming, magic_cost)
+	    magic_list[magic_slot+1] = string.format("%s (%s/%s/%s)", magic_name, magic_availability, magic_aiming, magic_cost)
 	  else
 	    magic_list[magic_slot+1] = ""
+	  end
+	end
+	end
+	
+	-- Engulf variables include $3A8A (which characters have been engulfed), $3A8D (active characters at the beginning of the battle) and $3EBC (bit 7 is set if all party engulfed).
+	engulf_list = {}
+	engulf_addresses = {0x3A8A, 0x3A8D, 0x3EBC}
+	if DISPLAY_ENGULF then
+	  for i = 1,3 do
+	    if write_log[engulf_addresses[i]] ~= nil then
+	      engulf_list[i] = bizstring.hex(write_log[engulf_addresses[i]])
+		else
+	      engulf_list[i] = ""
+		end
+	  end
+	end
+	
+	-- Display all addresses that have been written to.
+	write_addresses = {}
+	if DISPLAY_WRITE then
+	for address = 0,0xFFFF do
+      if write_log[address] ~= nil then
+		table.insert(write_addresses, bizstring.hex(address))
+	  end
+	end
+	console.writeline(table.concat(write_addresses,";"))
+	return
 	end
 
 	
-	console.writeline(string.format("%s;%s", bizstring.hex(monster_id), table.concat(item_list,";")))
+	console.writeline(string.format("%s;%s;%s;%s", bizstring.hex(monster_id), table.concat(item_list,";"), table.concat(magic_list,";"), table.concat(engulf_list,";")))
 	
 	end -- end if setup is working
 
