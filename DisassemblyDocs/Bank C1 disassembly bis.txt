@@ -3317,6 +3317,10 @@ C1/19F9: E2 20        SEP #$20
 C1/19FB: AD 0A 80     LDA $800A
 C1/19FE: F0 B0        BEQ $19B0
 C1/1A00: 60           RTS 
+
+
+(Data)
+
 C1/1A01: 01 02        ORA ($02,X)
 C1/1A03: 04 08        TSB $08
 C1/1A05: 10 20        BPL $1A27
