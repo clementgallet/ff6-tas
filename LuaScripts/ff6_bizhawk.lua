@@ -29,6 +29,9 @@ DISPLAY_RELM_INFO = false -- display sketch and control attacks
 DISPLAY_LOCKE_INFO = false -- display common and rare steal when in steal menu
 DISPLAY_GAU_INFO = false -- display unknown rages
 
+SKIP_FRAME_DEPENDENT = false
+
+
 -- End of user configuration --
 
 require 'ff6_bizhawk_helper'
@@ -45,55 +48,55 @@ MODE_MENU = 3
 -- the last position was whole or not
 last_position_whole = true
 
-display_battle = function()
-	sel_side, sel_i = mainmemory.readbyte(0x7ace), mainmemory.readbyte(0x7acf)
-	sel_enemy, sel_party = mainmemory.readbyte(0x7b7e),mainmemory.readbyte(0x7b7d)
-	sel_multi = mainmemory.readbyte(0x7b7f)
+function display_battle()
+	local sel_side, sel_i = mainmemory.readbyte(0x7ace), mainmemory.readbyte(0x7acf)
+	local sel_enemy, sel_party = mainmemory.readbyte(0x7b7e),mainmemory.readbyte(0x7b7d)
+	local sel_multi = mainmemory.readbyte(0x7b7f)
 	-- loop through present monsters
 	for i = 0, 5 do
 		-- a few shortcuts
-		j, k = 2*i, 2*(4+i)
-		state = mainmemory.read_u16_le(0x3aa0+k)
+		local j, k = 2*i, 2*(4+i)
+		local state = mainmemory.read_u16_le(0x3aa0+k)
 		if state ~= 0 and bit.check(state,15) ~= 1 then
 		-- get coordinates (we should know the size of the monster too, but we don't)
-		x = mainmemory.readbyte(0x80c2+1+j)
+		local x = mainmemory.readbyte(0x80c2+1+j)
 		-- this size is really the x-offset of the pointing hand relative to the start
 		-- of the sprite. For a normal attack, this works fine, but for monsters on the
 		-- right hand side of the screen, this offset is 0, as the hand is on their left
 		-- side. To do things properly, I should get this in a more direct fashion, but
 		-- I can't be bothered
-		xsize = mainmemory.readbyte(0x807a+1+j)
+		local xsize = mainmemory.readbyte(0x807a+1+j)
 		if xsize == 0 then xsize = 0x20 end
-		y = mainmemory.readbyte(0x80ce+1+j)
+		local y = mainmemory.readbyte(0x80ce+1+j)
 		-- other interesting information
-		id   = mainmemory.read_u16_le(0x3388+j)
-		xp   = mainmemory.read_u16_le(0x3d8c+j)
-		gold = mainmemory.read_u16_le(0x3da0+j)
-		hp   = mainmemory.read_u16_le(0x3bf4+k)
-		mp   = mainmemory.read_u16_le(0x3c08+k)
-		mhp  = mainmemory.read_u16_le(0x3c1c+k)
-		mmp  = mainmemory.read_u16_le(0x3c30+k)
-		level= mainmemory.readbyte(0x3b18+k)
-		speed= mainmemory.readbyte(0x3b19+k)
-		gauge= mainmemory.read_u16_le(0x3218+k)
+		local id   = mainmemory.read_u16_le(0x3388+j)
+		local xp   = mainmemory.read_u16_le(0x3d8c+j)
+		local gold = mainmemory.read_u16_le(0x3da0+j)
+		local hp   = mainmemory.read_u16_le(0x3bf4+k)
+		local mp   = mainmemory.read_u16_le(0x3c08+k)
+		local mhp  = mainmemory.read_u16_le(0x3c1c+k)
+		local mmp  = mainmemory.read_u16_le(0x3c30+k)
+		local level= mainmemory.readbyte(0x3b18+k)
+		local speed= mainmemory.readbyte(0x3b19+k)
+		local gauge= mainmemory.read_u16_le(0x3218+k)
 		-- elements
-		absorb  =  mainmemory.readbyte(0x3bcc+k)
-		nullify =  mainmemory.readbyte(0x3bcd+k)
-		resist  =  mainmemory.readbyte(0x3be1+k)
-		weak    =  mainmemory.readbyte(0x3be0+k)
-		stealn  =  mainmemory.readbyte(0x3311+j)
-		stealr  =  mainmemory.readbyte(0x3310+j)
-		dropn   =  memory.readbyte(0x0f3000+4*id+3)
-		dropr   =  memory.readbyte(0x0f3000+4*id+2)
+		local absorb  =  mainmemory.readbyte(0x3bcc+k)
+		local nullify =  mainmemory.readbyte(0x3bcd+k)
+		local resist  =  mainmemory.readbyte(0x3be1+k)
+		local weak    =  mainmemory.readbyte(0x3be0+k)
+		local stealn  =  mainmemory.readbyte(0x3311+j)
+		local stealr  =  mainmemory.readbyte(0x3310+j)
+		local dropn   =  memory.readbyte(0x0f3000+4*id+3)
+		local dropr   =  memory.readbyte(0x0f3000+4*id+2)
 
-		name = getmonstername(id)
+		local name = getmonstername(id)
 
 		-- Print the gauges
 		startgauge(x,y,xsize)
 		drawgauge(mp, mmp, 0x7f0000ff)
 		drawgauge(hp, mhp, 0x7f00ff00)
 		drawgauge(gauge, 0x10000, 0x7fff0000)
-		by = gy
+		local by = gy
 		gui.drawText(x-16, by-8, string.format("%2d",level))
 		print_element(x, by-6, absorb)
 		print_element(x+4, by-6, nullify)
@@ -101,12 +104,12 @@ display_battle = function()
 		print_element(x+12, by-6, weak)
 		gui.drawText(x+18, by-8, ""..hp)
 
-		active_slot = mainmemory.readbyte(0x0201)
-		active_player = mainmemory.readbyte(0x3ed8+active_slot*2)
-		menu_pos = mainmemory.readbyte(0x890f+active_slot)
-		relm_info = DISPLAY_RELM_INFO and active_player == 8 and menu_pos == 1
-		locke_info = DISPLAY_LOCKE_INFO and active_player == 1 and menu_pos == 1
-		gau_info = DISPLAY_GAU_INFO and active_player == 0xb
+		local active_slot = mainmemory.readbyte(0x0201)
+		local active_player = mainmemory.readbyte(0x3ed8+active_slot*2)
+		local menu_pos = mainmemory.readbyte(0x890f+active_slot)
+		local relm_info = DISPLAY_RELM_INFO and active_player == 8 and menu_pos == 1
+		local locke_info = DISPLAY_LOCKE_INFO and active_player == 1 and menu_pos == 1
+		local gau_info = DISPLAY_GAU_INFO and active_player == 0xb
 
 		if gau_info then
 			local id_byte, id_bit = math.floor(id/8), id % 8
@@ -133,13 +136,13 @@ display_battle = function()
 			gui.drawText(10,offset,string.format("Drops %s/%s", getitemname(dropn), getitemname(dropr)))
 			offset = offset+10
 			-- Special attack description
-			specialn = get_special(id)
+			local specialn = get_special(id)
 			if relm_info then
 				-- Sketch
-				sketch1 = memory.readbyte(0x0f4300+2*id)
-				sketch2 = memory.readbyte(0x0f4300+2*id+1)
+				local sketch1 = memory.readbyte(0x0f4300+2*id)
+				local sketch2 = memory.readbyte(0x0f4300+2*id+1)
 				-- control
-				control, controln = {}, {}
+				local control, controln = {}, {}
 				for ctrl_i = 0, 3 do
 					control[ctrl_i] = memory.readbyte(0x0f3d00+4*id+ctrl_i)
 				end
@@ -163,17 +166,17 @@ display_battle = function()
 	end end
 	-- Rage information when in the rage menu
 	if mainmemory.readbyte(0x7bd4) == 0x24 then
-		x = mainmemory.readbyte(0x892f)
-		y = mainmemory.readbyte(0x8933)
-		scroll = mainmemory.readbyte(0x892b)
-		i = 2*(y+scroll)+x
-		id = mainmemory.readbyte(0x257e + i)
+		local x = mainmemory.readbyte(0x892f)
+		local y = mainmemory.readbyte(0x8933)
+		local scroll = mainmemory.readbyte(0x892b)
+		local i = 2*(y+scroll)+x
+		local id = mainmemory.readbyte(0x257e + i)
 		if id ~= 0xFF then
 			-- What rages does this monster have?
-			rage1 = memory.readbyte(0x0f4600+2*id)
-			rage2 = memory.readbyte(0x0f4600+2*id+1)
+			local rage1 = memory.readbyte(0x0f4600+2*id)
+			local rage2 = memory.readbyte(0x0f4600+2*id+1)
 			-- Special attack description
-			specialn = get_special(id)
+			local specialn = get_special(id)
 			if rage1 == 0xEF then rage1n = specialn else rage1n = getattackname(rage1) end
 			if rage2 == 0xEF then rage2n = specialn else rage2n = getattackname(rage2) end
 			gui.drawText(10,offset,string.format("%s/%s", rage1n, rage2n))
@@ -185,31 +188,31 @@ end
 
 display_treasures = function()
 	-- get the screen position
-	sx     = mainmemory.read_u16_le(0x8297)
-	sy     = mainmemory.read_u16_le(0x8299)
+	local sx     = mainmemory.read_u16_le(0x8297)
+	local sy     = mainmemory.read_u16_le(0x8299)
 	if sx >= 0x8000 then sx = sx-0x10000 end
 	if sy >= 0x8000 then sy = sy-0x10000 end
 	-- prepare to loop through treasures
-	area   = mainmemory.read_u16_le(0x0082)
-	table  = 0x2d8634
-	i      = memory.read_u16_le(0x2d82f4+2*area)
-	to     = memory.read_u16_le(0x2d82f4+2*(area+1))
+	local area   = mainmemory.read_u16_le(0x0082)
+	local table  = 0x2d8634
+	local i      = memory.read_u16_le(0x2d82f4+2*area)
+	local to     = memory.read_u16_le(0x2d82f4+2*(area+1))
 	-- loop through the treasures
 	while i ~= to do
 		-- read from the treasure information array
-		xi     = memory.readbyte(table+i)
-		yi     = memory.readbyte(table+i+1)
-		flagi  = memory.read_u16_le(table+i+2)
-		item   = memory.readbyte(table+i+4)
-		name   = getitemname(item)
+		local xi     = memory.readbyte(table+i)
+		local yi     = memory.readbyte(table+i+1)
+		local flagi  = memory.read_u16_le(table+i+2)
+		local item   = memory.readbyte(table+i+4)
+		local name   = getitemname(item)
 		-- Has the box been taken? To find out, we need to
 		-- do some bit manipulation.
-		byte_index = math.floor(flagi/8)
-		bit_index = flagi % 8
+		local byte_index = math.floor(flagi/8)
+		local bit_index = flagi % 8
 		if byte_index >= 0x40 then
 			byte_index = byte_index - 0x40*math.floor(byte_index/0x40)
 		end
-		flag = mainmemory.readbyte(0x1e40+byte_index)
+		local flag = mainmemory.readbyte(0x1e40+byte_index)
 		flag = flag % (2^(bit_index+1))
 		flag = math.floor(flag/ 2^bit_index)
 		-- flag is now 0 if not taken and 1 if taken
@@ -217,9 +220,9 @@ display_treasures = function()
 
 		-- get the real x,y position, using the fact that
 		-- each square is 0x10 big.
-		x,y = 0x10*xi, 0x10*yi
+		local x,y = 0x10*xi, 0x10*yi
 		-- relative coordinates
-		rx, ry = x-sx, y-sy
+		local rx, ry = x-sx, y-sy
 
 		-- draw a nice red box around the treasure box
 		gui.drawRectangle(rx, ry, 0x10, 0x10, color)
@@ -233,12 +236,12 @@ display_treasures = function()
 	-- loop through the transitions
 	while i ~= to do
 		-- read from the treasure information array
-		xi     = memory.readbyte(table+i)
-		yi     = memory.readbyte(table+i+1)
-		hmm    = memory.read_u16_le(table+i+2)
-		xti    = memory.readbyte(table+i+4)
-		yti    = memory.readbyte(table+i+5)
-		area2 = hmm % 0x200
+		local xi     = memory.readbyte(table+i)
+		local yi     = memory.readbyte(table+i+1)
+		local hmm    = memory.read_u16_le(table+i+2)
+		local xti    = memory.readbyte(table+i+4)
+		local yti    = memory.readbyte(table+i+5)
+		local area2 = hmm % 0x200
 		-- is it to the same area? If so, color it
 		-- light blue. Else make it normal blue.
 		if area2 == area then color = 0x7f8080ff
@@ -246,9 +249,9 @@ display_treasures = function()
 
 		-- get the real x,y position, using the fact that
 		-- each square is 0x10 big.
-		x,y = 0x10*xi, 0x10*yi
+		local x,y = 0x10*xi, 0x10*yi
 		-- relative coordinates
-		rx, ry = x-sx, y-sy
+		local rx, ry = x-sx, y-sy
 		gui.drawRectangle(rx, ry, 0x10, 0x10, color)
 
 		i = i + 6
@@ -259,14 +262,14 @@ display_treasures = function()
 	-- loop through the wide transitions
 	while i ~= to do
 		-- read from the treasure information array
-		xi     = memory.readbyte(table+i)
-		yi     = memory.readbyte(table+i+1)
-		dxi    = memory.readbyte(table+i+2)
-		dyi    = 0
-		hmm    = memory.read_u16_le(table+i+3)
-		xti    = memory.readbyte(table+i+5)
-		yti    = memory.readbyte(table+i+6)
-		area2 = hmm % 0x200
+		local xi     = memory.readbyte(table+i)
+		local yi     = memory.readbyte(table+i+1)
+		local dxi    = memory.readbyte(table+i+2)
+		local dyi    = 0
+		local hmm    = memory.read_u16_le(table+i+3)
+		local xti    = memory.readbyte(table+i+5)
+		local yti    = memory.readbyte(table+i+6)
+		local area2 = hmm % 0x200
 		if dxi >= 0x80 then dxi, dyi = 0, dxi % 0x80 end
 		-- is it to the same area? If so, color it
 		-- light blue. Else make it normal blue.
@@ -276,9 +279,9 @@ display_treasures = function()
 
 		-- get the real x,y position, using the fact that
 		-- each square is 0x10 big.
-		x,y,dx,dy = 0x10*xi, 0x10*yi, 0x10*dxi, 0x10*dyi
+		local x,y,dx,dy = 0x10*xi, 0x10*yi, 0x10*dxi, 0x10*dyi
 		-- relative coordinates
-		rx, ry = x-sx, y-sy
+		local rx, ry = x-sx, y-sy
 		gui.drawRectangle(rx, ry, dx+0x10, dy+0x10, color)
 
 		i = i + 7
@@ -290,40 +293,40 @@ display_treasures = function()
 	-- loop through the reactions
 	while i ~= to do
 		-- read from the treasure information array
-		xi     = memory.readbyte(table+i)
-		yi     = memory.readbyte(table+i+1)
-		react1 = memory.read_u16_le(table+i+2)
-		react2 = memory.readbyte(table+i+4)
-		color = 0x7fffff00
+		local xi     = memory.readbyte(table+i)
+		local yi     = memory.readbyte(table+i+1)
+		local react1 = memory.read_u16_le(table+i+2)
+		local react2 = memory.readbyte(table+i+4)
+		local color = 0x7fffff00
 
 		-- get the real x,y position, using the fact that
 		-- each square is 0x10 big.
-		x,y = 0x10*xi, 0x10*yi
+		local x,y = 0x10*xi, 0x10*yi
 		-- relative coordinates
-		rx, ry = x-sx, y-sy
+		local rx, ry = x-sx, y-sy
 		gui.drawRectangle(rx, ry, 0x10, 0x10, color)
 
 		i = i + 5
 	end
 end
 
-display_encounters = function()
+function display_encounters()
 	-- Equipment-derived information is not kept permanently, it is recomputed
 	-- at the beginning of every frame, I think. We need to know if the party
 	-- has the moogle charm or charm bangle effect.
 	-- We will therefore loop through the equipment of all characters.
-	field_effects = 0
-	status_effects = 0
-	char_in_party = 0
+	local field_effects = 0
+	local status_effects = 0
+	local char_in_party = 0
 	for id = 0, 0xF do
-		tmp = mainmemory.readbyte(0x1850+id)
+		local tmp = mainmemory.readbyte(0x1850+id)
 		if tmp % 8 == mainmemory.readbyte(0x1a6d) then
 			-- character is present. If necessary, information about
 			-- row and slot is also awailable in tmp.
 			char_in_party = char_in_party + 1
-			x = id*0x25+0x1F -- start of equipment
+			local x = id*0x25+0x1F -- start of equipment
 			for i = 0, 5 do
-				item = mainmemory.readbyte(0x1600+x+i)
+				local item = mainmemory.readbyte(0x1600+x+i)
 				if item ~= 0xFF then
 					-- item actually equipped
 					field_effects = bit.bor(field_effects,memory.readbyte(0x185005+item*0x1e))
@@ -334,40 +337,43 @@ display_encounters = function()
 	end
 	-- field_effects is what is later put in 11df
 
+	local encounter_rate
+	local pack_index
+	
 	if mode == MODE_MAP then
-		terrain = mainmemory.readbyte(0x11f9) % 8
-		at_22 = memory.readbyte(0x00c28f+terrain) -- lave tall, men hva betyr de?
-		a = memory.readbyte(0x00c297+terrain) -- denne arrayen fÃ¸lger rett etter. samme stÃ¸rrelsesorden.
+		local terrain = mainmemory.readbyte(0x11f9) % 8
+		local at_22 = memory.readbyte(0x00c28f+terrain) -- lave tall, men hva betyr de?
+		local a = memory.readbyte(0x00c297+terrain) -- denne arrayen fÃ¸lger rett etter. samme stÃ¸rrelsesorden.
 		-- b og c er faktisk x og y-posisjonen pÃ¥ kartet til *forrige encounter*!
-		last_x = mainmemory.readbyte(0x1f60)
-		last_y = mainmemory.readbyte(0x1f61)
-		zone_x, zone_y = math.floor(last_x/0x20),math.floor(last_y/0x20)
-		zone = mainmemory.readbyte(0x1f64)*0x40+zone_y*8+zone_x
+		local last_x = mainmemory.readbyte(0x1f60)
+		local last_y = mainmemory.readbyte(0x1f61)
+		local zone_x, zone_y = math.floor(last_x/0x20),math.floor(last_y/0x20)
+		local zone = mainmemory.readbyte(0x1f64)*0x40+zone_y*8+zone_x
 
 		-- a mÃ¥ inneholde en mapping fra terreng til offsets i fÃ¸lgende array.
 		-- merkelig at slikt trengs.
 		pack_index = memory.readbyte(0x0f5400+zone*4+a)
 		-- den hÃ¸ye byten her angir kanskje om det er world of balance eller ruin eller noe annet?
-		encounter_rate_index = math.floor(memory.readbyte(0x0f5800+zone) / 4^at_22) % 4
+		local encounter_rate_index = math.floor(memory.readbyte(0x0f5800+zone) / 4^at_22) % 4
 		 -- field_effects har info om charm bangle etc. encounter_rate_index info om more/less enc.
-		x = (field_effects)%4*8 + encounter_rate_index*2
+		local x = (field_effects)%4*8 + encounter_rate_index*2
 		-- x er nÃ¥ indeks inn i encounter rate-tabellen.
 		encounter_rate = memory.read_u16_le(0x00c29f+x)
 	else
-		area = mainmemory.read_u16_le(0x0082)
-		ax,ay = math.floor(area/4), area % 4
-		a = (memory.readbyte(0x0f5880+ax) / 4^ay) % 4
-		x = ((mainmemory.readbyte(0x11df) % 4) * 4 + a) * 2
+		local area = mainmemory.read_u16_le(0x0082)
+		local ax,ay = math.floor(area/4), area % 4
+		local a = (memory.readbyte(0x0f5880+ax) / 4^ay) % 4
+		local x = ((mainmemory.readbyte(0x11df) % 4) * 4 + a) * 2
 		encounter_rate = memory.read_u16_le(0x00c2bf+x)
 		if bit.check(mainmemory.readbyte(0x0525),7) == 0 then
 			encounter_rate = 0
 		end
 		pack_index = memory.readbyte(0x0f5600+area)
 	end
-	enc1 = mainmemory.read_u16_le(0x1f6e)
-	enc2 = mainmemory.readbyte(0x1fa1)
-	enc3 = mainmemory.readbyte(0x1fa4)
-	count = 1
+	local enc1 = mainmemory.read_u16_le(0x1f6e)
+	local enc2 = mainmemory.readbyte(0x1fa1)
+	local enc3 = mainmemory.readbyte(0x1fa4)
+	local count = 1
 	if encounter_rate ~= 0 then
 		for i = 0, 100 do
 			enc1 = enc1 + encounter_rate
@@ -380,30 +386,31 @@ display_encounters = function()
 		gui.drawText(10,offset,"Encounter in ".. count.." steps.")
 		offset = offset+10
 
+		local formation
 		-- Veldt?
 		if pack_index == 0xFF then
-			enc_veldt = (mainmemory.readbyte(0x1fa5)+1) % 0x40
+			local enc_veldt = (mainmemory.readbyte(0x1fa5)+1) % 0x40
 			-- find a nonzero byte in the encountered formations bitarray.
 			while mainmemory.readbyte(0x1ddd+enc_veldt) == 0 do
 				enc_veldt = (enc_veldt+1) % 0x40
 			end
-			enc5 = mainmemory.readbyte(0x1fa3)
-			enc4 = (mainmemory.readbyte(0x1fa2)+1) % 0x100
+			local enc5 = mainmemory.readbyte(0x1fa3)
+			local enc4 = (mainmemory.readbyte(0x1fa2)+1) % 0x100
 			if enc4 == 0 then enc5 = enc5 + 0x17 end
-			bit_index = (memory.readbyte(0x00fd00+enc4)+enc5) % 0x8
-			bitset = mainmemory.readbyte(0x1ddd+enc_veldt)
+			local bit_index = (memory.readbyte(0x00fd00+enc4)+enc5) % 0x8
+			local bitset = mainmemory.readbyte(0x1ddd+enc_veldt)
 			-- find a nonzero bit, starting at a random position
 			while bit.check(bitset,bit_index) == 0 do
 				bit_index = (bit_index+1) % 8
 			end
 			formation = enc_veldt*8+bit_index
 		else
-			x = pack_index*8
+			local x = pack_index*8
 			-- Encounter type. x is the index into the monster pack array
-			enc1 = (mainmemory.readbyte(0x1fa2)+1) % 0x100
-			enc2 = mainmemory.readbyte(0x1fa3)
+			local enc1 = (mainmemory.readbyte(0x1fa2)+1) % 0x100
+			local enc2 = mainmemory.readbyte(0x1fa3)
 			if enc1 == 0 then enc2 = enc2+0x17 end
-			a = (memory.readbyte(0x00fd00+enc1)+enc2) % 0x100
+			local a = (memory.readbyte(0x00fd00+enc1)+enc2) % 0x100
 
 			if a > 0x50 then x = x+2 end
 			if a > 0xa0 then x = x+2 end
@@ -419,29 +426,38 @@ display_encounters = function()
 -- failure. It works for 3-4 chars in party on the map, mostly, but not for
 -- fewer chars, and not when not on the world map. If you want to enable it,
 -- comment the following line
-		skip_frame_dependent = false
 
-		if not skip_frame_dependent then
+		if not SKIP_FRAME_DEPENDENT then
 			-- To find out more about the encounter, we need the frame-
 			-- dependent be variable. We must first predict the number
 			-- of pixels we are away from an encounter.
+			
+			local faceing
+			local xpos, ypos
+			local pixels
+			
 			if mode == MODE_MAP then
 				faceing = mainmemory.readbyte(0x00f6)
 				xpos = mainmemory.read_u16_le(0x00c6)
 				ypos = mainmemory.read_u16_le(0x00c8)
 			else
-			-- have to loop through all chars to find out who is the leader?
-			-- However, the position we get this way does not move smoothly. Bleh.
-				for id = 0, 0xF do
-					local delta = 0x29*id
-					xpos, ypos = 0,0
-					if bit.check(mainmemory.readbyte(0x0867+delta),7) == 1 then
-						faceing = mainmemory.readbyte(0x086f+delta)
-						xpos = mainmemory.read_u16_le(0x086a+delta)
-						ypos = mainmemory.read_u16_le(0x086d+delta)
-						break
-					end
-				end
+				faceing = mainmemory.readbyte(0x09c7)
+				xpos = mainmemory.read_u16_le(0x005c)
+				ypos = mainmemory.read_u16_le(0x0060)
+			
+				-- have to loop through all chars to find out who is the leader?
+				-- However, the position we get this way does not move smoothly. Bleh.
+				
+				-- for id = 0, 0xF do
+					-- local delta = 0x29*id
+					-- xpos, ypos = 0,0
+					-- if bit.check(mainmemory.readbyte(0x0867+delta),7) == 1 then
+						-- faceing = mainmemory.readbyte(0x086f+delta)
+						-- xpos = mainmemory.read_u16_le(0x086a+delta)
+						-- ypos = mainmemory.read_u16_le(0x086d+delta)
+						-- break
+					-- end
+				-- end
 			end
 			if faceing == 0 then pixels = ypos % 0x10
 			elseif faceing == 1 then
@@ -454,13 +470,19 @@ display_encounters = function()
 			end
 			-- this is the pixels left in our current step. then add the number
 			-- of whole steps
-			standing_still = false
+			local standing_still = false
 			if pixels == 0 then
 				-- this is a whole position. was the last position whole too?
 				if last_position_whole then
 					standing_still = true
 					pixels = 0x10*count
-				else pixels = 0x10*(count-1) end
+				else
+					if mode == MODE_MAP then
+						pixels = 0x10*count
+					else
+						pixels = 0x10*(count-1)
+					end
+				end
 				last_position_whole = true
 			else
 				pixels = pixels + 0x10*(count-1)
@@ -472,11 +494,20 @@ display_encounters = function()
 			end
 			-- compensate for the time it takes to start moving
 			if standing_still then
-				if mode == MODE_MAP then pixels = pixels+2
+				if mode == MODE_MAP then
+					if mainmemory.readbyte(0xB652) == 0 then -- we didn't start moving. TODO: double check this.
+						pixels = pixels+1
+					end
 				else
-					if bit.check(status_effects,5) == 1 then
-						pixels = pixels + mainmemory.readbyte(0x0021e) % 4
-					else pixels = pixels + mainmemory.readbyte(0x0021e) % 4 end
+					if bit.check(status_effects,5) == 1 then -- sprint shoes?
+						pixels = pixels + mainmemory.readbyte(0x0021e) % 4 -- TODO: with sprint shoes.
+					else
+						if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
+							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 1) % 4) -- TODO: check this!! 2 -> 1 1 -> 2 0 -> 3 3 -> 4
+						else
+							pixels = pixels + 2 - (mainmemory.readbyte(0x0021e) % 4) -- TODO: check this!! 3 -> 0 2 -> 1 1 -> 2 0 -> 3
+						end
+					end
 				end
 			end
 			-- we assume that we are walking with maximum speed of 1 pixel per frame
@@ -487,23 +518,23 @@ display_encounters = function()
 			if math.floor(formation / 0x8000) == 1 then
 				-- High bit of formation set: randomly add 0..3 to formation
 				be = (be+1) % 0x100
-				a = memory.readbyte(0x00fd00+be) % 4
+				local a = memory.readbyte(0x00fd00+be) % 4
 				formation = (formation+a) % 0x8000
 			end
 		end
-		info1 = memory.readbyte(0x0f5900+4*formation)
-		info2 = memory.readbyte(0x0f5900+4*formation+1)
-		info3 = memory.readbyte(0x0f5900+4*formation+2)
-		info4 = memory.readbyte(0x0f5900+4*formation+3)
+		local info1 = memory.readbyte(0x0f5900+4*formation)
+		local info2 = memory.readbyte(0x0f5900+4*formation+1)
+		local info3 = memory.readbyte(0x0f5900+4*formation+2)
+		local info4 = memory.readbyte(0x0f5900+4*formation+3)
 
 		-- Build monster list
-		start = 0x0f6201+15*formation
-		present = memory.readbyte(start)
-		which = {}
-		number_of_enemies = 0
+		local start = 0x0f6201+15*formation
+		local present = memory.readbyte(start)
+		local which = {}
+		local number_of_enemies = 0
 		for i = 1, 6 do
 			if present % 2 == 1 then
-				id = memory.readbyte(start+i)
+				local id = memory.readbyte(start+i)
 				if which[id] then which[id] = which[id]+1
 				else which[id] = 1 end
 				number_of_enemies = number_of_enemies + 1
@@ -516,14 +547,14 @@ display_encounters = function()
 			offset = offset + 10
 		end
 
-		if not skip_frame_dependent then
+		if not SKIP_FRAME_DEPENDENT then
 			-- What kind of encounter?
-			variant = math.floor(info1 / 0x10) % 0x10
+			local variant = math.floor(info1 / 0x10) % 0x10
 			-- variant is four bits long, and those bits are front, back, pincer, side; inverted.
 			-- from high to low.
 			-- let us extract these
-			allowed = {}
-			allowed_number = 0
+			local allowed = {}
+			local allowed_number = 0
 			for i = 0, 3 do
 				allowed[i] = 1 - variant % 2
 				allowed_number = allowed_number + allowed[i]
@@ -554,10 +585,12 @@ display_encounters = function()
 			be = be + 0xa + 2*number_of_enemies + char_in_party
 			-- get a random number from 0 to sum-1, using be
 			be = (be+1) % 0x100
-			rnd = math.floor(memory.readbyte(0x00fd00+be)*sum/0x100)
+			local rnd = math.floor(memory.readbyte(0x00fd00+be)*sum/0x100)
+			
 			-- now loop through again, and pick the first that is bigger
 			-- than the number
 			sum = 0
+			local chosen = 0
 			for i = 0, 3 do if allowed[3-i] == 1 then
 				sum = sum + memory.readbyte(0x025279+i)+1
 				if sum > rnd then
@@ -566,7 +599,7 @@ display_encounters = function()
 				end
 			end end
 
-			vardesc = { "Front", "Back", "Pincer", "Side" }
+			local vardesc = { "Front", "Back", "Pincer", "Side" }
 
 			-- Finally, describe the result
 			if chosen ~= 0 then
@@ -577,8 +610,9 @@ display_encounters = function()
 	end
 end
 
+
+-- Main loop
 while true do
-	-- Are we in battle?
 	-- Determine if we're in battle, on the world map, in a town/dungeon, or in the menu
 	if mainmemory.readbyte(0x2000) < 13 then
 		mode = MODE_BATTLE
@@ -586,7 +620,8 @@ while true do
 		mode = MODE_MAP
 	elseif bit.band(mainmemory.read_u16_le(0x1f64), 0x01FF) >= 0x0003 and bit.band(mainmemory.read_u16_le(0x1f64), 0x01FF) <= 0x019E then
 		mode = MODE_CAVE
-	elseif mainmemory.read_u16_le(0x1501) == 0x1387 and mainmemory.readbyte(0x1503) == 0xC3 then
+	end
+	if mainmemory.read_u16_le(0x1501) == 0x1387 and mainmemory.readbyte(0x1503) == 0xC3 then
 		mode = MODE_MENU
 	end -- there's actually no way to tell you're in the menu other than checking it's NMI address
 
