@@ -438,34 +438,25 @@ function display_encounters()
 			
 			if mode == MODE_MAP then
 				faceing = mainmemory.readbyte(0x00f6)
-				xpos = mainmemory.read_u16_le(0x00c6)
-				ypos = mainmemory.read_u16_le(0x00c8)
+				xpos = mainmemory.readbyte(0x00c6)
+				ypos = mainmemory.readbyte(0x00c8)
 			else
-				faceing = mainmemory.readbyte(0x09c7)
-				xpos = mainmemory.read_u16_le(0x005c)
-				ypos = mainmemory.read_u16_le(0x0060)
-			
-				-- have to loop through all chars to find out who is the leader?
-				-- However, the position we get this way does not move smoothly. Bleh.
-				
+				-- have to loop through all chars to find out who is the leader
 				-- for id = 0, 0xF do
 					-- local delta = 0x29*id
-					-- xpos, ypos = 0,0
-					-- if bit.check(mainmemory.readbyte(0x0867+delta),7) == 1 then
-						-- faceing = mainmemory.readbyte(0x086f+delta)
-						-- xpos = mainmemory.read_u16_le(0x086a+delta)
-						-- ypos = mainmemory.read_u16_le(0x086d+delta)
+					-- if bit.check(memory.readbyte(0x0867+delta),7) then
+						-- faceing = memory.readbyte(0x087f+delta)
 						-- break
 					-- end
 				-- end
+
+				faceing = mainmemory.readbyte(0x00b3) - 1
+				xpos = mainmemory.readbyte(0x005c)
+				ypos = mainmemory.readbyte(0x0060)
 			end
 			if faceing == 0 then pixels = ypos % 0x10
-			elseif faceing == 1 then
-				pixels = xpos % 0x10
-				if pixels ~= 0 then pixels = 0x10-pixels end
-			elseif faceing == 2 then
-				pixels = ypos % 0x10
-				if pixels ~= 0 then pixels = 0x10-pixels end
+			elseif faceing == 1 then pixels = (0x100 - xpos) % 0x10
+			elseif faceing == 2 then pixels = (0x100 - ypos) % 0x10
 			else pixels = xpos % 0x10
 			end
 			-- this is the pixels left in our current step. then add the number
@@ -489,31 +480,44 @@ function display_encounters()
 				last_position_whole = false
 			end
 			-- sprint shoes?
-			if mode == MODE_CAVE and bit.check(status_effects,5) then
+			if mode == MODE_CAVE and bit.check(field_effects,5) then
 				pixels = math.floor(pixels/2)
 			end
 			-- compensate for the time it takes to start moving
 			if standing_still then
-				if mode == MODE_MAP then
-					if mainmemory.readbyte(0xB652) == 0 then -- we didn't start moving. TODO: double check this.
+				if mode == MODE_MAP then -- it only takes 1 frame to start moving on the map
+					if mainmemory.readbyte(0xB652) == 0 then -- unknown value that seems to work well.
 						pixels = pixels+1
 					end
 				else
-					if bit.check(status_effects,5) == 1 then -- sprint shoes?
-						pixels = pixels + mainmemory.readbyte(0x0021e) % 4 -- TODO: with sprint shoes.
+					if bit.check(field_effects,5) then -- sprint shoes?
+						if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
+							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 3) % 4) -- FIXME: NOT GOOD, VARIABLE :(
+						else
+							pixels = pixels + 2 - ((mainmemory.readbyte(0x0021e) + 2) % 4) -- FIXME: NOT GOOD, VARIABLE :(
+						end
 					else
 						if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
-							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 1) % 4) -- TODO: check this!! 2 -> 1 1 -> 2 0 -> 3 3 -> 4
+							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 1) % 4) -- FIXME: NOT GOOD, VARIABLE :(
 						else
-							pixels = pixels + 2 - (mainmemory.readbyte(0x0021e) % 4) -- TODO: check this!! 3 -> 0 2 -> 1 1 -> 2 0 -> 3
+							pixels = pixels + 2 - (mainmemory.readbyte(0x0021e) % 4) -- FIXME: NOT GOOD, VARIABLE :(
 						end
 					end
 				end
 			end
+			
+			-- The length of the battle transition depends on if we are in the world map or not.
+			if mode == MODE_MAP then
+				battle_transition = 0x22
+			else
+				battle_transition = 0x2A
+			end
+				
 			-- we assume that we are walking with maximum speed of 1 pixel per frame
 			-- this will lead to be getting this value at the beginning of battle
-			be = 4*((mainmemory.readbyte(0x021e)+pixels+0x22) % 0x3c)
-			gui.drawText(10,90,string.format("be: %x vs %x, %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos))
+			
+			be = 4*((mainmemory.readbyte(0x021e)+pixels+battle_transition-1) % 0x3c) + 4
+			gui.drawText(10,90,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
 
 			if math.floor(formation / 0x8000) == 1 then
 				-- High bit of formation set: randomly add 0..3 to formation
@@ -533,13 +537,12 @@ function display_encounters()
 		local which = {}
 		local number_of_enemies = 0
 		for i = 1, 6 do
-			if present % 2 == 1 then
+			if bit.check(present, i-1) then
 				local id = memory.readbyte(start+i)
 				if which[id] then which[id] = which[id]+1
 				else which[id] = 1 end
 				number_of_enemies = number_of_enemies + 1
 			end
-			present = math.floor(present/2)
 		end
 		-- Display list
 		for id, num in pairs(which) do
@@ -549,49 +552,47 @@ function display_encounters()
 
 		if not SKIP_FRAME_DEPENDENT then
 			-- What kind of encounter?
-			local variant = math.floor(info1 / 0x10) % 0x10
-			-- variant is four bits long, and those bits are front, back, pincer, side; inverted.
-			-- from high to low.
-			-- let us extract these
-			local allowed = {}
+			-- In info1, bit 4: disable normal, bit 5: disable back, bit 6: disable pincer, bit 7: disable side
+			local allowed = {} -- will hold {normal, back, pincer, side}
 			local allowed_number = 0
 			for i = 0, 3 do
-				allowed[i] = 1 - variant % 2
-				allowed_number = allowed_number + allowed[i]
-				variant = math.floor(variant/2)
+				allowed[i] = not bit.check(info1, 4 + i) -- if checked, then disable corresponding encounter
+				if allowed[i] then
+					allowed_number = allowed_number + 1
+				end
 			end
-			if bit.check(status_effects,1) == 1 then
+			if bit.check(status_effects,1) then
 				-- back guard, disable back and pincer.
 				-- This will prefer to remove pincer if not
 				-- both can be removed.
-				for i = 1, 2 do if allowed_number > 1 then
-					allowed[i] = 0
-					allowed_number = allowed_number-1
+				for i = 0, 1 do if allowed_number > 1 then
+					allowed[2-i] = false
+					allowed_number = allowed_number - 1
 				end end
 			end
 			if char_in_party < 3 and allowed_number > 1 then
 				-- not enough characters to do side attack
-				allowed[3] = 0
+				allowed[3] = false
 				allowed_number = allowed_number - 1
 			end
 
 			-- Now we pick one of the possibilities
 			-- First find the sum of the weights
 			local sum = 0
-			for i = 0, 3 do if allowed[i] == 1 then
+			for i = 0, 3 do if allowed[3-i] then
 				sum = sum + memory.readbyte(0x025279+i)+1
 			end end
 			-- before this point, be has been incremented by other things
 			be = be + 0xa + 2*number_of_enemies + char_in_party
 			-- get a random number from 0 to sum-1, using be
 			be = (be+1) % 0x100
-			local rnd = math.floor(memory.readbyte(0x00fd00+be)*sum/0x100)
+			local rnd = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*sum, 8), 0xFF)
 			
 			-- now loop through again, and pick the first that is bigger
 			-- than the number
 			sum = 0
 			local chosen = 0
-			for i = 0, 3 do if allowed[3-i] == 1 then
+			for i = 0, 3 do if allowed[3-i] then
 				sum = sum + memory.readbyte(0x025279+i)+1
 				if sum > rnd then
 					chosen = 3-i
