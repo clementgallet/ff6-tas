@@ -490,23 +490,17 @@ function display_encounters()
 						pixels = pixels+1
 					end
 				else
-					if bit.check(field_effects,5) then -- sprint shoes?
-						if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
-							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 3) % 4) -- FIXME: NOT GOOD, VARIABLE :(
-						else
-							pixels = pixels + 2 - ((mainmemory.readbyte(0x0021e) + 2) % 4) -- FIXME: NOT GOOD, VARIABLE :(
-						end
+					local frame_rule = mainmemory.readbyte(0x0014) / 12
+					if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
+						pixels = pixels + 3 - ((frame_rule + 0) % 4)
 					else
-						if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
-							pixels = pixels + 3 - ((mainmemory.readbyte(0x0021e) + 1) % 4) -- FIXME: NOT GOOD, VARIABLE :(
-						else
-							pixels = pixels + 2 - (mainmemory.readbyte(0x0021e) % 4) -- FIXME: NOT GOOD, VARIABLE :(
-						end
+						pixels = pixels + 2 - ((frame_rule + 3) % 4)
 					end
 				end
 			end
 			
 			-- The length of the battle transition depends on if we are in the world map or not.
+			local battle_transition
 			if mode == MODE_MAP then
 				battle_transition = 0x22
 			else
@@ -519,11 +513,11 @@ function display_encounters()
 			be = 4*((mainmemory.readbyte(0x021e)+pixels+battle_transition-1) % 0x3c) + 4
 			gui.drawText(10,90,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
 
-			if math.floor(formation / 0x8000) == 1 then
+			if bit.check(formation, 15) then
 				-- High bit of formation set: randomly add 0..3 to formation
 				be = (be+1) % 0x100
 				local a = memory.readbyte(0x00fd00+be) % 4
-				formation = (formation+a) % 0x8000
+				formation = bit.band(formation + a, 0x7FFF)
 			end
 		end
 		local info1 = memory.readbyte(0x0f5900+4*formation)
