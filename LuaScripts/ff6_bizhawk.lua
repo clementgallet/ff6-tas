@@ -601,6 +601,36 @@ function display_encounters()
 				gui.drawText(10, offset, string.format("%s attack",vardesc[chosen+1]))
 				offset = offset+10
 			end
+			
+			-- Determine preemptive
+			local preemptive = false
+			if bit.check(info4, 2) then
+				gui.drawText(10, offset, "Preemptive disabled")
+				offset = offset+10
+			elseif chosen == 0 or chosen == 3 then -- front or side, preemptive possible
+				
+				-- determine the preemptive rate
+				local rate = 8 * chosen + 0x20
+
+				if bit.check(status_effects,0) then -- Gale hairpin equipped
+					rate = rate * 2
+				end
+
+				-- call the rng
+				be = (be+1) % 0x100
+				local rng = memory.readbyte(0x00fd00+be)
+
+				if rng < rate then
+					preemptive = true
+				end
+			end
+
+			-- Finally, describe the result
+			if preemptive then
+				gui.drawText(10, offset, "Pre-emptive battle")
+				offset = offset+10
+			end
+
 		end
 	end
 end
