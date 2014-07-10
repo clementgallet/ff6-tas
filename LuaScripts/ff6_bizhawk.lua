@@ -310,6 +310,10 @@ display_treasures = function()
 	end
 end
 
+-----------------------------------------
+-- Predict encounters during map and cave
+-----------------------------------------
+
 function display_encounters()
 	-- Equipment-derived information is not kept permanently, it is recomputed
 	-- at the beginning of every frame, I think. We need to know if the party
@@ -318,6 +322,8 @@ function display_encounters()
 	local field_effects = 0
 	local status_effects = 0
 	local char_in_party = 0
+	local slot_speed = {0xFF, 0xFF, 0xFF, 0xFF} -- for computing ATB much later
+	local slot_name = {"", "", "", ""} -- for displaying ATB much later
 	for id = 0, 0xF do
 		local tmp = mainmemory.readbyte(0x1850+id)
 		if tmp % 8 == mainmemory.readbyte(0x1a6d) then
@@ -333,6 +339,11 @@ function display_encounters()
 					status_effects = bit.bor(status_effects,memory.readbyte(0x18500a+item*0x1e))
 				end
 			end
+			
+			-- Gather the speed of the corresponding character
+			slot = bit.rshift(bit.band(tmp, 0x18), 3)
+			slot_speed[slot+1] = mainmemory.readbyte(0x161B+0x25*id)
+			slot_name[slot+1] = readsnesstringram(0x1602+0x25*id,6)
 		end
 	end
 	-- field_effects is what is later put in 11df
@@ -530,12 +541,18 @@ function display_encounters()
 		local present = memory.readbyte(start)
 		local which = {}
 		local number_of_enemies = 0
+		local enemy_slot_speed = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+		local enemy_slot_name = {"", "", "", "", "", ""}
 		for i = 1, 6 do
 			if bit.check(present, i-1) then
 				local id = memory.readbyte(start+i)
 				if which[id] then which[id] = which[id]+1
 				else which[id] = 1 end
 				number_of_enemies = number_of_enemies + 1
+				
+				-- Grab the enemy speed
+				enemy_slot_speed[i] = memory.readbyte(0x0f0001+0x20*id)
+				enemy_slot_name[i] = getmonstername(id)
 			end
 		end
 		-- Display list
@@ -580,7 +597,7 @@ function display_encounters()
 			be = be + 0xa + 2*number_of_enemies + char_in_party
 			-- get a random number from 0 to sum-1, using be
 			be = (be+1) % 0x100
-			local rnd = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*sum, 8), 0xFF)
+			local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*sum, 8), 0xFF)
 			
 			-- now loop through again, and pick the first that is bigger
 			-- than the number
@@ -588,7 +605,7 @@ function display_encounters()
 			local chosen = 0
 			for i = 0, 3 do if allowed[3-i] then
 				sum = sum + memory.readbyte(0x025279+i)+1
-				if sum > rnd then
+				if sum > rng then
 					chosen = 3-i
 					break
 				end
@@ -630,6 +647,64 @@ function display_encounters()
 				gui.drawText(10, offset, "Pre-emptive battle")
 				offset = offset+10
 			end
+				
+			-- Determine ATB startup values
+			general_incrementor = 0x10 * (10 - number_of_enemies - char_in_party)
+			
+			-- Compute random specific incrementor
+			atb_bar = {}
+			entity_bit = 0x03FF
+			
+			for entity = 9, 0, -1 do 
+				entity_remaining = entity + 1
+				be = (be+1) % 0x100
+				local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*entity_remaining, 8), 0xFF)
+				
+				-- take the rnd-th set bit starting 0
+				local specific_incrementor
+				for b = 0, 9 do
+					if bit.check(entity_bit, b) then
+						rng = rng - 1
+					end
+					if rng < 0 then
+						specific_incrementor = b * 8
+						entity_bit = bit.clear(entity_bit, b)
+						break
+					end
+				end
+							
+				if entity < 4 then -- character
+					if preemptive or chosen == 3 then -- Preemptive or side attack
+						atb_bar[entity] = 0xFF
+					elseif chosen == 0 then -- Front attack
+						local speed = slot_speed[entity+1]
+						be = (be+1) % 0x100
+						local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
+						atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
+					else -- Pincer or Back
+						atb_bar[entity] = specific_incrementor + 1
+					end
+				else
+					if preemptive or chosen == 3 then -- Preemptive or side attack
+						atb_bar[entity] = 2
+					else
+						local speed = enemy_slot_speed[entity-3]
+						be = (be+1) % 0x100
+						local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
+						atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
+					end
+				end
+			end
+			
+			for cs = 1, 4 do if slot_speed[cs] ~= 0xFF then -- character slot is filled
+					gui.drawText(10, offset, string.format("ATB %s: %d",slot_name[cs], atb_bar[cs-1]))
+					offset = offset+10
+			end	end
+			
+			for ms = 1, 6 do if enemy_slot_speed[ms] ~= 0xFF then -- monster slot is filled
+					gui.drawText(10, offset, string.format("ATB %s: %d",enemy_slot_name[ms], atb_bar[ms+3]))
+					offset = offset+10
+			end	end
 
 		end
 	end

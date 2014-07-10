@@ -79,6 +79,20 @@ readsnesstring = function(from,maximum)
 	return res
 end
 
+readsnesstringram = function(from,maximum)
+	local res = ""
+	local tmp = mainmemory.readbyte(from)
+	local i = 0
+	while tmp ~= 0xFF do
+		if i == maximum then break end
+		res = res .. tochar(tmp)
+		from = from+1
+		tmp = mainmemory.readbyte(from)
+		i = i+1
+	end
+	return res
+end
+
 getitemname = function(id)
 	return readsnesstring(0x12b300+0xd*id+1,12)
 end
