@@ -186,6 +186,12 @@ function display_battle()
 end
 
 
+----------------------------------------
+-- Display treasures and events in caves
+----------------------------------------
+
+
+
 display_treasures = function()
 	-- get the screen position
 	local sx     = mainmemory.read_u16_le(0x8297)
@@ -310,9 +316,11 @@ display_treasures = function()
 	end
 end
 
+
 -----------------------------------------
 -- Predict encounters during map and cave
 -----------------------------------------
+
 
 function display_encounters()
 	-- Equipment-derived information is not kept permanently, it is recomputed
@@ -328,7 +336,7 @@ function display_encounters()
 		local tmp = mainmemory.readbyte(0x1850+id)
 		if tmp % 8 == mainmemory.readbyte(0x1a6d) then
 			-- character is present. If necessary, information about
-			-- row and slot is also awailable in tmp.
+			-- row and slot is also available in tmp.
 			char_in_party = char_in_party + 1
 			local x = id*0x25+0x1F -- start of equipment
 			for i = 0, 5 do
@@ -348,6 +356,8 @@ function display_encounters()
 	end
 	-- field_effects is what is later put in 11df
 
+	
+	-- Get the encounter rate of the current tile
 	local encounter_rate
 	local pack_index
 	
@@ -381,18 +391,32 @@ function display_encounters()
 		end
 		pack_index = memory.readbyte(0x0f5600+area)
 	end
-	local enc1 = mainmemory.read_u16_le(0x1f6e)
-	local enc2 = mainmemory.readbyte(0x1fa1)
-	local enc3 = mainmemory.readbyte(0x1fa4)
-	local count = 1
+		
 	if encounter_rate ~= 0 then
-		for i = 0, 100 do
+	
+		-- Compute how many steps until the next fight
+		local enc1 = mainmemory.read_u16_le(0x1f6e)
+		local enc2 = mainmemory.readbyte(0x1fa1)
+		local enc3 = mainmemory.readbyte(0x1fa4)
+		local count = -1
+
+		for i = 0, 250 do
 			enc1 = enc1 + encounter_rate
+			gui.drawPixel(i+2, 220-math.floor(enc1/0x100), 0x7F00FF00)
+			
 			if enc1 >= 0x10000 then enc1 = 0xff00 end
 			enc2 = (enc2+1) % 0x100
 			if enc2 == 0 then enc3 = (enc3 + 0x11) % 0x100 end
-			if (memory.readbyte(0x00fd00+enc2)+enc3) % 0x100 < math.floor(enc1/0x100) then break end
-			count = count+1
+			local rng = (memory.readbyte(0x00fd00+enc2)+enc3) % 0x100
+			if rng < math.floor(enc1/0x100) then
+				gui.drawLine(i+2, max(220-rng, 190), i+2, 190, 0x7FFF0000)
+				if count == -1 then
+					count = i + 1
+				end
+				enc1 = 0
+			else
+				gui.drawLine(i+2, max(220-rng, 190), i+2, 190, 0x7F0000FF)
+			end
 		end
 		gui.drawText(10,offset,"Encounter in ".. count.." steps.")
 		offset = offset+10
@@ -429,108 +453,99 @@ function display_encounters()
 			formation = memory.read_u16_le(0x0f4800+x)
 		end
 
--- At this point, we have all the frame-independent information about the
--- encounter we can get. The following is an attempt to handle the frame-
--- dependent information by predicting at what frame an encounter will occur.
--- This is formation variation (on the floating continent only), attack type
--- (front, back, pincer, side) and preemptiv or not. However, this ended in
--- failure. It works for 3-4 chars in party on the map, mostly, but not for
--- fewer chars, and not when not on the world map. If you want to enable it,
--- comment the following line
 
-		if not SKIP_FRAME_DEPENDENT then
-			-- To find out more about the encounter, we need the frame-
-			-- dependent be variable. We must first predict the number
-			-- of pixels we are away from an encounter.
-			
-			local faceing
-			local xpos, ypos
-			local pixels
-			
-			if mode == MODE_MAP then
-				faceing = mainmemory.readbyte(0x00f6)
-				xpos = mainmemory.readbyte(0x00c6)
-				ypos = mainmemory.readbyte(0x00c8)
-			else
-				-- have to loop through all chars to find out who is the leader
-				-- for id = 0, 0xF do
-					-- local delta = 0x29*id
-					-- if bit.check(memory.readbyte(0x0867+delta),7) then
-						-- faceing = memory.readbyte(0x087f+delta)
-						-- break
-					-- end
+		-- To find out more about the encounter, we need the frame-
+		-- dependent be variable. We must first predict the number
+		-- of pixels we are away from an encounter.
+		
+		local faceing
+		local xpos, ypos
+		local pixels
+		
+		if mode == MODE_MAP then
+			faceing = mainmemory.readbyte(0x00f6)
+			xpos = mainmemory.readbyte(0x00c6)
+			ypos = mainmemory.readbyte(0x00c8)
+		else
+			-- have to loop through all chars to find out who is the leader
+			-- for id = 0, 0xF do
+				-- local delta = 0x29*id
+				-- if bit.check(memory.readbyte(0x0867+delta),7) then
+					-- faceing = memory.readbyte(0x087f+delta)
+					-- break
 				-- end
+			-- end
 
-				faceing = mainmemory.readbyte(0x00b3) - 1
-				xpos = mainmemory.readbyte(0x005c)
-				ypos = mainmemory.readbyte(0x0060)
-			end
-			if faceing == 0 then pixels = ypos % 0x10
-			elseif faceing == 1 then pixels = (0x100 - xpos) % 0x10
-			elseif faceing == 2 then pixels = (0x100 - ypos) % 0x10
-			else pixels = xpos % 0x10
-			end
-			-- this is the pixels left in our current step. then add the number
-			-- of whole steps
-			local standing_still = false
-			if pixels == 0 then
-				-- this is a whole position. was the last position whole too?
-				if last_position_whole then
-					standing_still = true
+			faceing = mainmemory.readbyte(0x00b3) - 1
+			xpos = mainmemory.readbyte(0x005c)
+			ypos = mainmemory.readbyte(0x0060)
+		end
+		if faceing == 0 then pixels = ypos % 0x10
+		elseif faceing == 1 then pixels = (0x100 - xpos) % 0x10
+		elseif faceing == 2 then pixels = (0x100 - ypos) % 0x10
+		else pixels = xpos % 0x10
+		end
+		-- this is the pixels left in our current step. then add the number
+		-- of whole steps
+		local standing_still = false
+		if pixels == 0 then
+			-- this is a whole position. was the last position whole too?
+			if last_position_whole then
+				standing_still = true
+				pixels = 0x10*count
+			else
+				if mode == MODE_MAP then
 					pixels = 0x10*count
 				else
-					if mode == MODE_MAP then
-						pixels = 0x10*count
-					else
-						pixels = 0x10*(count-1)
-					end
+					pixels = 0x10*(count-1)
 				end
-				last_position_whole = true
+			end
+			last_position_whole = true
+		else
+			pixels = pixels + 0x10*(count-1)
+			last_position_whole = false
+		end
+		-- sprint shoes?
+		if mode == MODE_CAVE and bit.check(field_effects,5) then
+			pixels = math.floor(pixels/2)
+		end
+		-- compensate for the time it takes to start moving
+		if standing_still then
+			if mode == MODE_MAP then -- it only takes 1 frame to start moving on the map
+				if mainmemory.readbyte(0xB652) == 0 then -- unknown value that seems to work well.
+					pixels = pixels+1
+				end
 			else
-				pixels = pixels + 0x10*(count-1)
-				last_position_whole = false
-			end
-			-- sprint shoes?
-			if mode == MODE_CAVE and bit.check(field_effects,5) then
-				pixels = math.floor(pixels/2)
-			end
-			-- compensate for the time it takes to start moving
-			if standing_still then
-				if mode == MODE_MAP then -- it only takes 1 frame to start moving on the map
-					if mainmemory.readbyte(0xB652) == 0 then -- unknown value that seems to work well.
-						pixels = pixels+1
-					end
+				local frame_rule = mainmemory.readbyte(0x0014) / 12
+				if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
+					pixels = pixels + 3 - ((frame_rule + 0) % 4)
 				else
-					local frame_rule = mainmemory.readbyte(0x0014) / 12
-					if mainmemory.readbyte(0x000d) == 0 then -- we didn't start moving yet.
-						pixels = pixels + 3 - ((frame_rule + 0) % 4)
-					else
-						pixels = pixels + 2 - ((frame_rule + 3) % 4)
-					end
+					pixels = pixels + 2 - ((frame_rule + 3) % 4)
 				end
-			end
-			
-			-- The length of the battle transition depends on if we are in the world map or not.
-			local battle_transition
-			if mode == MODE_MAP then
-				battle_transition = 0x22
-			else
-				battle_transition = 0x2A
-			end
-				
-			-- we assume that we are walking with maximum speed of 1 pixel per frame
-			-- this will lead to be getting this value at the beginning of battle
-			
-			be = 4*((mainmemory.readbyte(0x021e)+pixels+battle_transition-1) % 0x3c) + 4
-			gui.drawText(10,90,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
-
-			if bit.check(formation, 15) then
-				-- High bit of formation set: randomly add 0..3 to formation
-				be = (be+1) % 0x100
-				local a = memory.readbyte(0x00fd00+be) % 4
-				formation = bit.band(formation + a, 0x7FFF)
 			end
 		end
+		
+		-- The length of the battle transition depends on if we are in the world map or not.
+		local battle_transition
+		if mode == MODE_MAP then
+			battle_transition = 0x22
+		else
+			battle_transition = 0x2A
+		end
+			
+		-- we assume that we are walking with maximum speed of 1 pixel per frame
+		-- this will lead to be getting this value at the beginning of battle
+		
+		be = 4*((mainmemory.readbyte(0x021e)+pixels+battle_transition-1) % 0x3c) + 4
+		-- gui.drawText(10,90,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
+
+		if bit.check(formation, 15) then
+			-- High bit of formation set: randomly add 0..3 to formation
+			be = (be+1) % 0x100
+			local a = memory.readbyte(0x00fd00+be) % 4
+			formation = bit.band(formation + a, 0x7FFF)
+		end
+
 		local info1 = memory.readbyte(0x0f5900+4*formation)
 		local info2 = memory.readbyte(0x0f5900+4*formation+1)
 		local info3 = memory.readbyte(0x0f5900+4*formation+2)
@@ -561,152 +576,149 @@ function display_encounters()
 			offset = offset + 10
 		end
 
-		if not SKIP_FRAME_DEPENDENT then
-			-- What kind of encounter?
-			-- In info1, bit 4: disable normal, bit 5: disable back, bit 6: disable pincer, bit 7: disable side
-			local allowed = {} -- will hold {normal, back, pincer, side}
-			local allowed_number = 0
-			for i = 0, 3 do
-				allowed[i] = not bit.check(info1, 4 + i) -- if checked, then disable corresponding encounter
-				if allowed[i] then
-					allowed_number = allowed_number + 1
-				end
+		-- What kind of encounter?
+		-- In info1, bit 4: disable normal, bit 5: disable back, bit 6: disable pincer, bit 7: disable side
+		local allowed = {} -- will hold {normal, back, pincer, side}
+		local allowed_number = 0
+		for i = 0, 3 do
+			allowed[i] = not bit.check(info1, 4 + i) -- if checked, then disable corresponding encounter
+			if allowed[i] then
+				allowed_number = allowed_number + 1
 			end
-			if bit.check(status_effects,1) then
-				-- back guard, disable back and pincer.
-				-- This will prefer to remove pincer if not
-				-- both can be removed.
-				for i = 0, 1 do if allowed_number > 1 then
-					allowed[2-i] = false
-					allowed_number = allowed_number - 1
-				end end
-			end
-			if char_in_party < 3 and allowed_number > 1 then
-				-- not enough characters to do side attack
-				allowed[3] = false
+		end
+		if bit.check(status_effects,1) then
+			-- back guard, disable back and pincer.
+			-- This will prefer to remove pincer if not
+			-- both can be removed.
+			for i = 0, 1 do if allowed_number > 1 then
+				allowed[2-i] = false
 				allowed_number = allowed_number - 1
+			end end
+		end
+		if char_in_party < 3 and allowed_number > 1 then
+			-- not enough characters to do side attack
+			allowed[3] = false
+			allowed_number = allowed_number - 1
+		end
+
+		-- Now we pick one of the possibilities
+		-- First find the sum of the weights
+		local sum = 0
+		for i = 0, 3 do if allowed[3-i] then
+			sum = sum + memory.readbyte(0x025279+i)+1
+		end end
+		-- before this point, be has been incremented by other things
+		be = be + 0xa + 2*number_of_enemies + char_in_party
+		-- get a random number from 0 to sum-1, using be
+		be = (be+1) % 0x100
+		local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*sum, 8), 0xFF)
+		
+		-- now loop through again, and pick the first that is bigger
+		-- than the number
+		sum = 0
+		local chosen = 0
+		for i = 0, 3 do if allowed[3-i] then
+			sum = sum + memory.readbyte(0x025279+i)+1
+			if sum > rng then
+				chosen = 3-i
+				break
+			end
+		end end
+
+		local vardesc = { "Front", "Back", "Pincer", "Side" }
+
+		-- Finally, describe the result
+		if chosen ~= 0 then
+			gui.drawText(10, offset, string.format("%s attack",vardesc[chosen+1]))
+			offset = offset+10
+		end
+		
+		-- Determine preemptive
+		local preemptive = false
+		if bit.check(info4, 2) then
+			gui.drawText(10, offset, "Preemptive disabled")
+			offset = offset+10
+		elseif chosen == 0 or chosen == 3 then -- front or side, preemptive possible
+			
+			-- determine the preemptive rate
+			local rate = 8 * chosen + 0x20
+
+			if bit.check(status_effects,0) then -- Gale hairpin equipped
+				rate = rate * 2
 			end
 
-			-- Now we pick one of the possibilities
-			-- First find the sum of the weights
-			local sum = 0
-			for i = 0, 3 do if allowed[3-i] then
-				sum = sum + memory.readbyte(0x025279+i)+1
-			end end
-			-- before this point, be has been incremented by other things
-			be = be + 0xa + 2*number_of_enemies + char_in_party
-			-- get a random number from 0 to sum-1, using be
+			-- call the rng
 			be = (be+1) % 0x100
-			local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*sum, 8), 0xFF)
+			local rng = memory.readbyte(0x00fd00+be)
+
+			if rng < rate then
+				preemptive = true
+			end
+		end
+
+		-- Finally, describe the result
+		if preemptive then
+			gui.drawText(10, offset, "Pre-emptive battle")
+			offset = offset+10
+		end
 			
-			-- now loop through again, and pick the first that is bigger
-			-- than the number
-			sum = 0
-			local chosen = 0
-			for i = 0, 3 do if allowed[3-i] then
-				sum = sum + memory.readbyte(0x025279+i)+1
-				if sum > rng then
-					chosen = 3-i
+		-- Determine ATB startup values
+		general_incrementor = 0x10 * (10 - number_of_enemies - char_in_party)
+		
+		-- Compute random specific incrementor
+		atb_bar = {}
+		entity_bit = 0x03FF
+		
+		for entity = 9, 0, -1 do 
+			entity_remaining = entity + 1
+			be = (be+1) % 0x100
+			local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*entity_remaining, 8), 0xFF)
+			
+			-- take the rnd-th set bit starting 0
+			local specific_incrementor
+			for b = 0, 9 do
+				if bit.check(entity_bit, b) then
+					rng = rng - 1
+				end
+				if rng < 0 then
+					specific_incrementor = b * 8
+					entity_bit = bit.clear(entity_bit, b)
 					break
 				end
-			end end
-
-			local vardesc = { "Front", "Back", "Pincer", "Side" }
-
-			-- Finally, describe the result
-			if chosen ~= 0 then
-				gui.drawText(10, offset, string.format("%s attack",vardesc[chosen+1]))
-				offset = offset+10
 			end
-			
-			-- Determine preemptive
-			local preemptive = false
-			if bit.check(info4, 2) then
-				gui.drawText(10, offset, "Preemptive disabled")
-				offset = offset+10
-			elseif chosen == 0 or chosen == 3 then -- front or side, preemptive possible
-				
-				-- determine the preemptive rate
-				local rate = 8 * chosen + 0x20
-
-				if bit.check(status_effects,0) then -- Gale hairpin equipped
-					rate = rate * 2
+						
+			if entity < 4 then -- character
+				if preemptive or chosen == 3 then -- Preemptive or side attack
+					atb_bar[entity] = 0xFF
+				elseif chosen == 0 then -- Front attack
+					local speed = slot_speed[entity+1]
+					be = (be+1) % 0x100
+					local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
+					atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
+				else -- Pincer or Back
+					atb_bar[entity] = specific_incrementor + 1
 				end
-
-				-- call the rng
-				be = (be+1) % 0x100
-				local rng = memory.readbyte(0x00fd00+be)
-
-				if rng < rate then
-					preemptive = true
-				end
-			end
-
-			-- Finally, describe the result
-			if preemptive then
-				gui.drawText(10, offset, "Pre-emptive battle")
-				offset = offset+10
-			end
-				
-			-- Determine ATB startup values
-			general_incrementor = 0x10 * (10 - number_of_enemies - char_in_party)
-			
-			-- Compute random specific incrementor
-			atb_bar = {}
-			entity_bit = 0x03FF
-			
-			for entity = 9, 0, -1 do 
-				entity_remaining = entity + 1
-				be = (be+1) % 0x100
-				local rng = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*entity_remaining, 8), 0xFF)
-				
-				-- take the rnd-th set bit starting 0
-				local specific_incrementor
-				for b = 0, 9 do
-					if bit.check(entity_bit, b) then
-						rng = rng - 1
-					end
-					if rng < 0 then
-						specific_incrementor = b * 8
-						entity_bit = bit.clear(entity_bit, b)
-						break
-					end
-				end
-							
-				if entity < 4 then -- character
-					if preemptive or chosen == 3 then -- Preemptive or side attack
-						atb_bar[entity] = 0xFF
-					elseif chosen == 0 then -- Front attack
-						local speed = slot_speed[entity+1]
-						be = (be+1) % 0x100
-						local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
-						atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
-					else -- Pincer or Back
-						atb_bar[entity] = specific_incrementor + 1
-					end
+			else
+				if preemptive or chosen == 3 then -- Preemptive or side attack
+					atb_bar[entity] = 2
 				else
-					if preemptive or chosen == 3 then -- Preemptive or side attack
-						atb_bar[entity] = 2
-					else
-						local speed = enemy_slot_speed[entity-3]
-						be = (be+1) % 0x100
-						local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
-						atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
-					end
+					local speed = enemy_slot_speed[entity-3]
+					be = (be+1) % 0x100
+					local random_speed = bit.band(bit.rshift(memory.readbyte(0x00fd00+be)*speed, 8), 0xFF)
+					atb_bar[entity] = speed + random_speed + specific_incrementor + general_incrementor + 1
 				end
 			end
-			
-			for cs = 1, 4 do if slot_speed[cs] ~= 0xFF then -- character slot is filled
-					gui.drawText(10, offset, string.format("ATB %s: %d",slot_name[cs], atb_bar[cs-1]))
-					offset = offset+10
-			end	end
-			
-			for ms = 1, 6 do if enemy_slot_speed[ms] ~= 0xFF then -- monster slot is filled
-					gui.drawText(10, offset, string.format("ATB %s: %d",enemy_slot_name[ms], atb_bar[ms+3]))
-					offset = offset+10
-			end	end
-
 		end
+		
+		for cs = 1, 4 do if slot_speed[cs] ~= 0xFF then -- character slot is filled
+				gui.drawText(10, offset, string.format("ATB %s: %d",slot_name[cs], atb_bar[cs-1]))
+				offset = offset+10
+		end	end
+		
+		for ms = 1, 6 do if enemy_slot_speed[ms] ~= 0xFF then -- monster slot is filled
+				gui.drawText(10, offset, string.format("ATB %s: %d",enemy_slot_name[ms], atb_bar[ms+3]))
+				offset = offset+10
+		end	end
 	end
 end
 
@@ -725,7 +737,7 @@ while true do
 		mode = MODE_MENU
 	end -- there's actually no way to tell you're in the menu other than checking it's NMI address
 
-	offset = 100
+	offset = 10
 	if mode == MODE_BATTLE then
 		display_battle()
 	elseif mode == MODE_CAVE then
