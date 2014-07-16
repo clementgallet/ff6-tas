@@ -28,9 +28,7 @@
 DISPLAY_RELM_INFO = false -- display sketch and control attacks
 DISPLAY_LOCKE_INFO = false -- display common and rare steal when in steal menu
 DISPLAY_GAU_INFO = false -- display unknown rages
-
-SKIP_FRAME_DEPENDENT = false
-
+DISPLAY_CRITICALS = true
 
 -- End of user configuration --
 
@@ -129,6 +127,18 @@ function display_battle()
 			offset = offset+10
 			--gui.drawText(10,offset,string.format("XP:%d, gold:%d",xp,gold))
 			--offset = offset+10
+			if DISPLAY_CRITICALS then
+				be = mainmemory.readbyte(0x00be)
+				be = (be + 0x31) % 0x100
+				rng = memory.readbyte(0x00fd00+be)
+				if rng < 0x08 then
+					gui.drawText(10,offset,string.format("Critical (%X)",be))
+					offset = offset+10
+				else
+					gui.drawText(10,offset,string.format("(%X)",be))
+					offset = offset+10
+				end
+			end
 			if locke_info then
 				gui.drawText(10,offset,string.format("Steal %s/%s", getitemname(stealn), getitemname(stealr)))
 				offset = offset+10
