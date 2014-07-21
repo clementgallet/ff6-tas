@@ -547,7 +547,13 @@ function display_encounters()
 		-- this will lead to be getting this value at the beginning of battle
 		
 		be = 4*((mainmemory.readbyte(0x021e)+pixels+battle_transition-1) % 0x3c) + 4
-		-- gui.drawText(10,90,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
+		
+		-- Print the frame rule.
+		gui.drawText(10,offset,"Frame rule: ".. ((be/4)%4))
+		offset = offset+10
+
+		gui.drawText(10,offset,string.format("be: %x vs %x, %x %x %x", mainmemory.readbyte(0x00be), be,pixels,xpos,ypos))
+		offset = offset+10
 
 		if bit.check(formation, 15) then
 			-- High bit of formation set: randomly add 0..3 to formation
