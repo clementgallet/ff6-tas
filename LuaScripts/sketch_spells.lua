@@ -2,11 +2,11 @@
 -- Begin of configuration
 -------------------------
 
-MOLD_NUMBER = 8
+MOLD_NUMBER = 12
 
 DISPLAY_COMMANDS = true
-DISPLAY_ITEMS = false
-DISPLAY_MAGIC = false
+DISPLAY_ITEMS = true
+DISPLAY_MAGIC = true
 DISPLAY_ENGULF = false
 DISPLAY_WRITE = false
 
@@ -309,7 +309,9 @@ console.writeline(table.concat(header,";"))
 	-- Function C1/22A5: copy sprites from ROM to RAM
 	---------------------------------------------------------------------------
 
+	loop_nb = 0
 	write_log = {} -- log all the writes from ROM to RAM
+	write_log[loop_nb] = {} -- first loop
 	
 	bit_pos = 0 -- $824D
 	sprite_flag_index = 0 -- $824E
@@ -364,19 +366,19 @@ console.writeline(table.concat(header,";"))
 		  if monster_color_depth then
 			  -- console.writeline(string.format("%s;%s", bizstring.hex(bit.band(screen_address+offset_ram, 0xFFFF)),bizstring.hex(monster_sprite_pointer+offset_rom)))
 			for n = 0, 7 do
-			  write_log[bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
-			  write_log[bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
 			end
 			for n = 0, 7 do
-			  write_log[bit.band(screen_address+offset_ram+0x10+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+0x10+n)
-			  write_log[bit.band(screen_address+offset_ram+0x11+2*n, 0xFFFF)] = 0
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+0x10+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+0x10+n)
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+0x11+2*n, 0xFFFF)] = 0
 			end
 		    offset_rom = bit.band(offset_rom + 0x18, 0xFFFF)
 		  else
 			-- console.writeline(string.format("%s;%s", bizstring.hex(bit.band(screen_address+offset_ram, 0xFFFF)),bizstring.hex(monster_sprite_pointer+offset_rom)))
 			for n = 0, 15 do
-			  write_log[bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
-			  write_log[bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
+			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
 			end
 		    offset_rom = bit.band(offset_rom + 0x20, 0xFFFF)
 		  end
@@ -389,7 +391,12 @@ console.writeline(table.concat(header,";"))
 	  
 	  bit_pos = 0
 	  offset_ram = 0
+	  past_screen_address = screen_address
 	  screen_address = bit.band(screen_address + 0x0200, 0xFFFF)
+	  if screen_address < past_screen_address then
+		loop_nb = loop_nb + 1
+		write_log[loop_nb] = {}
+	  end
 	end -- end for cur_height
 	
 	
@@ -405,26 +412,30 @@ console.writeline(table.concat(header,";"))
 	if DISPLAY_COMMANDS then
 	for command_slot = 0,15 do
 	  command_offset = 0x202E + 3 * command_slot
-	  if write_log[command_offset] ~= nil or write_log[command_offset+2] ~= nil then
-	    if write_log[command_offset] ~= nil then
-	      command_name = getcommandname(write_log[command_offset]) .. "(" .. write_log[command_offset]
+	  cell_string = {}
+	  for loop = 0,loop_nb do
+	  if write_log[loop][command_offset] ~= nil or write_log[loop][command_offset+2] ~= nil then
+	    if write_log[loop][command_offset] ~= nil then
+	      command_name = getcommandname(write_log[loop][command_offset]) .. "(" .. write_log[loop][command_offset]
 		else
 	      command_name = "("
 		end
-	    if write_log[command_offset+1] ~= nil then
-	      command_availability = bizstring.hex(write_log[command_offset+1])
+	    if write_log[loop][command_offset+1] ~= nil then
+	      command_availability = bizstring.hex(write_log[loop][command_offset+1])
 		else
 	      command_availability = ""
 		end
-	    if write_log[command_offset+2] ~= nil then
-	      command_aiming = bizstring.hex(write_log[command_offset+2])
+	    if write_log[loop][command_offset+2] ~= nil then
+	      command_aiming = bizstring.hex(write_log[loop][command_offset+2])
 		else
 	      command_aiming = ""
 		end
-		table.insert(string_line, string.format("%s/%s/%s)", command_name, command_availability, command_aiming))
+		table.insert(cell_string, string.format("%s/%s/%s)", command_name, command_availability, command_aiming))
 	  else
-		table.insert(string_line, "")
+		table.insert(cell_string, "")
 	  end
+	  end
+	  table.insert(string_line, table.concat(cell_string,"-"))
 	end
 	end
 	  
@@ -432,36 +443,41 @@ console.writeline(table.concat(header,";"))
 	if DISPLAY_ITEMS then
 	for item_slot = 0,263 do
 	  item_offset = item_slot*5+0x2686
-      if write_log[item_offset] ~= nil or write_log[item_offset+4] ~= nil then
-	    if write_log[item_offset] ~= nil then -- item id
-		  item_id = getitemname(write_log[item_offset])
+  	  cell_string = {}
+	  for loop = 0,loop_nb do
+
+      if write_log[loop][item_offset] ~= nil or write_log[loop][item_offset+4] ~= nil then
+	    if write_log[loop][item_offset] ~= nil then -- item id
+		  item_id = getitemname(write_log[loop][item_offset])
 		else
 		  item_id = ""
 		end
-	    if write_log[item_offset+1] ~= nil then -- item flags
-		  item_flags = bizstring.hex(write_log[item_offset+1])
+	    if write_log[loop][item_offset+1] ~= nil then -- item flags
+		  item_flags = bizstring.hex(write_log[loop][item_offset+1])
 		else
 		  item_flags = ""
 		end
-	    if write_log[item_offset+2] ~= nil then -- item targeting
-		  item_targeting = bizstring.hex(write_log[item_offset+2])
+	    if write_log[loop][item_offset+2] ~= nil then -- item targeting
+		  item_targeting = bizstring.hex(write_log[loop][item_offset+2])
 		else
 		  item_targeting = ""
 		end
-	    if write_log[item_offset+3] ~= nil then -- item quantity
-		  item_quantity = string.format(" * %d",write_log[item_offset+3])
+	    if write_log[loop][item_offset+3] ~= nil then -- item quantity
+		  item_quantity = string.format(" * %d",write_log[loop][item_offset+3])
 		else
 		  item_quantity = ""
 		end
-	    if write_log[item_offset+4] ~= nil then -- item targeting
-		  item_equipability = bizstring.hex(write_log[item_offset+4])
+	    if write_log[loop][item_offset+4] ~= nil then -- item targeting
+		  item_equipability = bizstring.hex(write_log[loop][item_offset+4])
 		else
 		  item_equipability = ""
 		end
-		table.insert(string_line, string.format("%s%s (%s/%s/%s)", item_id, item_quantity, item_flags, item_targeting, item_equipability))
+		table.insert(cell_string, string.format("%s%s (%s/%s/%s)", item_id, item_quantity, item_flags, item_targeting, item_equipability))
 	  else
-		table.insert(string_line, "") -- No item
+		table.insert(cell_string, "") -- No item
 	  end
+	  end
+	  table.insert(string_line, table.concat(cell_string,"-"))
 	end
 	end
 	
@@ -470,31 +486,35 @@ console.writeline(table.concat(header,";"))
 	if DISPLAY_MAGIC then
 	for magic_slot = 0,(79*4-1) do
 	  magic_offset = 0x208E + 4 * magic_slot
-	  if write_log[magic_offset] ~= nil then -- magic id
+  	  cell_string = {}
+	  for loop = 0,loop_nb do
+	  if write_log[loop][magic_offset] ~= nil then -- magic id
 	  
-	    magic_name = getmagicname(write_log[magic_offset])
-	    if write_log[magic_offset+1] == nil then -- magic availability
+	    magic_name = getmagicname(write_log[loop][magic_offset])
+	    if write_log[loop][magic_offset+1] == nil then -- magic availability
 		  magic_availability = ""
 		else
-		  magic_availability = bizstring.hex(write_log[magic_offset+1])
+		  magic_availability = bizstring.hex(write_log[loop][magic_offset+1])
 		end
 		
-	    if write_log[magic_offset+2] == nil then -- magic aiming
+	    if write_log[loop][magic_offset+2] == nil then -- magic aiming
 		  magic_aiming = ""
 		else
-		  magic_aiming = bizstring.hex(write_log[magic_offset+2])
+		  magic_aiming = bizstring.hex(write_log[loop][magic_offset+2])
 		end
 		
-	    if write_log[magic_offset+3] == nil then -- magic cost
+	    if write_log[loop][magic_offset+3] == nil then -- magic cost
 		  magic_cost = ""
 		else
-		  magic_cost = bizstring.hex(write_log[magic_offset+3])
+		  magic_cost = bizstring.hex(write_log[loop][magic_offset+3])
 		end
 		
-	    table.insert(string_line, string.format("%s (%s/%s/%s)", magic_name, magic_availability, magic_aiming, magic_cost))
+	    table.insert(cell_string, string.format("%s (%s/%s/%s)", magic_name, magic_availability, magic_aiming, magic_cost))
 	  else
-	    table.insert(string_line, "")
+	    table.insert(cell_string, "")
 	  end
+	  end
+  	  table.insert(string_line, table.concat(cell_string,"-"))
 	end
 	end
 	
