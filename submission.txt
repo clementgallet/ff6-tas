@@ -1,0 +1,152 @@
+Tricks
+
+Desperation attack
+
+Desperation attacks are rather secret and powerful attacks in ff6. Under specific conditions, the attack command has 1/16 chance of triggering a character specific technique dealing massive damage to one enemy. Those conditions are:
+- The character must be in the near fatal status, when HPs are lower than 1/8 of max HPs
+- The number of battle ticks must be over 768. In other words, we have to wait for about 25 seconds after the beginning of the fight.
+- The character must not be in the Muddle, Image, Clear or Zombie status
+- You can only cast one desperation attack per character per fight
+- Gau, Umaro and special characters don't have a desperation attack
+
+The desperation attacks are magical attacks that ignore the defense of the enemy. So the amount of damage only depends on the level, the magic stats of the caster and the random variation. Strago and Relm desperation attacks are different, they kill instantly the target.
+
+
+Message speed tricks
+
+Escaping fights is usually faster to do when getting a preemptive or side attack. Sometimes, however, not all characters will run away immediately. The remaining characters will run away about two seconds after. This usually happens when the number of characters is higher than the number of enemies. In this case, there are two ways to get a faster run-away. The first solution is to get a front attack instead, and try to run away as soon as possible. This is used during Sabin scenario mainly, for the single Ghost fights. It saves about one second. The other solution is to set the Message Speed to 2 in the Options. In this case, all run-away during preemptives/side attacks will be perfect. The downside is of course that each battle message text box will be longer by about 16 frames. This includes the "Preemptive"/"Side attack" message and every command message. This is used twice in this run, during Mt Kolts and during Terra scenario, as there are many random fights and we control a team of three characters.
+
+Run-away trick
+
+The way the RNG works during fights is that you have a general counter stored in $BE which is used as an index in the random static array $C0FD00-$C0FDFF. Each time the game pulls a random number, it increases the RNG index by one. During the fight, when no action is playing, the RNG index increases by one unit per frame. When an action is starting, the game pulls several random numbers to compute the action random factors (random damage, miss, criticals, chance of giving status, etc.) and then the RNG index is frozen until the animation of the action ended. If several actions are queued, then the RNG index will just increase by the number of random numbers pulled between each action.
+
+There are several ways to manipulate the RNG, which is very useful to get criticals, desperation attacks and to manipulate the enemies behavior. The first one is simply to delay an action so that the RNG index will be frozen at a different value, and subsequent actions will use different random numbers. However, this is only possible when no action was made before it (typically the first action of the fight). Sometimes, you want to cast actions as fast as possible to queue them before enemies actions. In that case, there is a very useful trick using the run-away (R+L).
+
+The game checks about every two seconds (more often with the Haste status) if each character is running away. If it is the case, it pulls a random number between 1 and a character specific run-away constant (stored in $3D71, $3D73, $3D75, $3D77 for each character) and adds it to a counter (stored in $3D70, $3D72, $3D74, $3D76 for each character). If this counter gets over the run-away difficulty (usually 2 times the number of enemies) then the character will escape the fight. The important part here is that you can make the game pull random numbers, thus increasing the RNG index, even during action animations. Let's say the animation takes 4 seconds and you have 4 characters in your party. At the end of the animation, you can set the RNG index to 9 different values. This is also useful to try to cast the desperation attack as soon as possible after the time limitation is passed. This trick is not working for preemptive/side attack battles, as the run-away counters are not increasing.
+
+If this tricks allows you to increase the RNG index during animations, you can also do the opposite. When no animation is played, you can freeze the RNG index by popping the "Can't run away" text box. This was used several times in the run.
+
+
+Sketch glitch
+
+In short
+
+The sketch glitch is the major glitch used in this run. Missing the sketch command with Relm, for specific characteristics of the 28th spell of the first character, may induce a partial rewriting of your inventory, graphical glitches, freezing or even a softlock.
+
+How does it work?
+
+During a successful sketch, the game will get which monster was sketched and look for the sprite of that monster in the memory. It will copy the sprite in the RAM and display a flipped version on the screen. When the sketch misses, the game will still do all the procedure except for the display. The origin of the problem is in function C2/F5D2:
+
+```
+...
+C2/F5E1: A0 03 00        LDY #$0003
+C2/F5E4: B1 76           LDA ($76),Y
+C2/F5E6: 0A              ASL
+C2/F5E7: AA              TAX
+C2/F5E8: C2 20           REP $20
+C2/F5EA: BD 01 20        LDA $2001,X
+C2/F5ED: AA              TAX
+C2/F5EE: 7B              TDC
+C2/F5EF: E2 20           SEP $20
+C2/F5F1: 22 D1 24 C1     JSL $C124D1
+...
+```
+
+During a successful sketch, instruction `LDA ($76),Y` loads the enemy slot number (between 0 and 5), and get the monster id by looking at the array $2001-$200C containing the id (16-bit integer) of the 6 monsters present in battle. However, when the sketch misses, instruction `LDA ($76),Y` loads 0xFF instead of the enemy slot number. So `LDA $2001,X` is wrongly fetching the 16-bit integer `$20FF-$2100` as the enemy id. This address is in the middle of the battle spell table. `$20FF` contains information about the usability of the 28th spell of the first character (was used/available). `$2100` contains the aiming byte of the 28th spell of the first character.
+
+The function `C1/24D1` and sub-functions are executed with an incorrect enemy id. The next problem arises in function C1/215F. This function loads the disposition of tiles in an enemy sprite. Indeed, tiles are stored in one dimension in the game memory, and it uses a mapping to place the tiles to build a two-dimensional sprite. The list of mappings for each enemy sprite is located starting $D2A820. This function loads the mapping corresponding to the enemy id and stores it in the array $822D-$824D. From this array, the game derives the height and the width of the enemy sprite in tile units. This is the critical portion of the function:
+
+C1/21B8: A6 00        LDX $00
+C1/21BA: C2 20        REP #$20       (set 16-bit accumulator)
+...
+C1/21BE: BD 2D 82     LDA $822D,X    (get mappings for this row of tiles of the bitmap)
+C1/21C1: F0 0B        BEQ $21CE      (if none of the tiles in this row are set, branch)
+...
+C1/21C7: E8           INX 
+C1/21C8: E8           INX 
+C1/21C9: E0 20 00     CPX #$0020
+C1/21CC: D0 F0        BNE $21BE      (loop for all 16 rows.
+                                      when this loop exits, X will hold the # of rows
+                                      in the image that have any valid tiles [times 2].)
+
+The game computes the height of the sprite as the number of valid (non-zero) tiles in the mapping. Keep in mind that if the enemy id is wrong, the mapping array will also be wrong. If this mapping array starts with the 0 value, the computed height of the enemy sprite will be zero.
+
+Now, the most important function is function C1/22A5 which copies each tile of the enemy sprite from ROM to RAM, depending on the mapping array. This function is basically a double for loop on the width and height of the enemy sprite. Then, a tile is copied for every bit set in the mapping array. Here is the portion of the code that decrements the sprite height and loops, at the end of the function:
+
+C1/22D7: CE 53 82     DEC $8253    (decrement adjusted monster height/8
+                                    [iow, its tile height])
+C1/22DA: D0 C9        BNE $22A5    (loop if we haven't finished processing/copying
+                                    all the rows of the monster's tiles.)
+
+Notice that the game *first* decrements the height, and then checks if it's non-zero. What happens if the height is zero in the first place? The variable becomes 255, so the game will assume that the sprite has a tile height of 256! This is a very high value, the maximum tile height planned by the game is 16. This will lead to many more tile copies than normally, which will overwrite many other memory locations.
+
+Which variables affect the outcome of the glitch?
+
+As said earlier, the game will load the availability and the aiming of the 28th spell of the first character, and interpret them as the enemy id. During battle startup, the spell list of all character present in the battle is compressed and stored for each character. The compression is as followed: the whole spell list is placed in a table of three columns. If a row does not contain any spell known by a character present in the battle, that row is deleted. The remaining table is placed in the Magic menu for each character, with only their known spells. If we want to have a spell in the 28th slot, we have to learn at least 10 spells that will each one fill a different row. The route for the present TAS is to learn:
+- Cure (Lv1), Fire (Lv3), Antdot (Lv6) and Drain (Lv12) with Terra's natural magic
+- Sleep (10 AP), Mute (13 AP) and Slow (15 AP) with Siren
+- Bio (13 AP) and Break (20 AP) with Shoat
+- Muddle (15 AP) and Imp (20 AP) with Stray
+
+Here is how the magic list looks like during a fight where all 10 spells are present. 10 rows are filled so that Break is placed at the 28th position.
+
+*Cure*     Cure 2    Cure 3 
+Life     Life 2    *Antdot* 
+(Remedy   Regen     Life 3)
+-------------------------
+Scan     *Slow*      Rasp
+*Mute*     Safe      *Sleep*
+*Muddle*   Haste     Stop 
+Bserk    Float     *Imp* 
+(Rflect   Shell     Vanish)
+(Haste2   Slow2     Osmose)
+(Warp     Quick     Dispel)
+-------------------------
+*Fire*     Ice       Bolt 
+Poison   *Drain*     Fire 2 
+Ice 2    Bolt 2    *Bio* 
+(Fire 3   Ice 3     Bolt 3)
+*Break*    Doom      Pearl 
+(Flare    Demi      Quartr)
+(X-Zone   Meteor    Ultima)
+(Quake    W.Wind    Merton)
+-------------------------
+
+Now that we know how to place a spell at the 28th position, we can focus on the characteristics of the spell that affect the sketch glitch. First, the aiming of the spell consists of an 8-bit integer where each bit has a different meaning:
+* Bit 0 = Cursor Moveable
+* Bit 1 = One Side Only
+* Bit 2 = Autoselect both parties
+* Bit 3 = Autoselect one party
+* Bit 4 = Auto Confirm
+* Bit 5 = Manual Party Select
+* Bit 6 = Cursor Start on Enemy
+* Bit 7 = Randomize selection
+
+There are 13 different aiming bytes represented in this game:
+* `0x00` (Self): Warp
+* `0x01` (Allies or enemies, single): Safe, Haste, Bserk, Rflect, Shell, Vanish, Life, Life 2
+* `0x02` (Self): Quick
+* `0x03` (Allies, single target): Antdot, Remedy, Regen, Life 3
+* `0x04` (Allies and enemies, multi target): Quake, W Wind, Merton
+* `0x21` (Allies or enemies, single or multi target): Float, Cure, Cure 2, Cure 3
+* `0x29` (Allies or enemies, multi or single target): Haste 2
+* `0x41` (Enemies or allies, single target): Poison, Drain, Break, Doom, Pearl, Flare, Scan, Slow, Rasp, Mute, Sleep, Muddle, Stop, Imp, Osmose, Dispel
+* `0x43` (Enemies, single target): Demi
+* `0x61` (Enemies or allies, single or multi target): Fire, Ice, Bolt, Fire 2, Ice 2, Bolt 2, Bio, Fire 3, Ice 3, Bolt 3
+* `0x69` (Enemies or allies, multi or single target): Slow 2
+* `0x6A` (Enemies, multi target): X-Zone
+* `0x6E` (Enemies, multi target): Quartr, Meteor, Ultima
+
+We used in this route the 0x41 aiming byte because it gives access to the shortest setups. The second characteristics is the availability of the spell. It is represented as a 8-bit integer, whose bit 7 is set if the spell is not available (grayed) or cleared if it is. When the game updates the availability of the spell (function `C2/5763`), the integer is shifted right and the new availability bit is stored in bit 7. At the beginning of the battle, the integer is initialised as 0xFF and the game updates the availability of every spell. The game calls its update function when:
+- The holder of the spell received a MP heal by an item. Items having the "Concerns MP" flag set are Tincture, Ether, X-Ether, Elixir, Megalixir, Sleeping Bag and Tent.
+- The holder of the spell consumes MP using the Magic, X-Magic, Esper or Lore commands. Spells costing 0 MPs don't trigger the update.
+- The holder of the spell is imped or de-imped.
+The game does *not* call the update function when:
+- The holder of the spell attacks with a weapon with the "critical MP" property (like the Rune Edge), thus reducing his MPs.
+- The holder gets the Mute status. This is because the Magic command is disabled, not every individual spell, as opposed to the Imp status where every spell except Imp is disabled.
+
+At the battle startup and after each turn, function `C2/083F` is called. For a given entity, if his Imp status is toggled, the attack/spell costs him MP to cast, or the attack itself affects his MP because he's a target [or the caster, if it's a draining attack]), then it updates availability of entries on Esper, Magic and Lore menus (function `C2/5763`).
+
+In function `C2/5763`, carry is set if Imped and spell not Imp, or insufficient MP. Then, spell availability is rotated right, putting the carry in bit 7.
+
+Goggles glitch
