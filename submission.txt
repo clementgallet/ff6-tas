@@ -1,116 +1,135 @@
-Tricks
+!!!Tricks
 
-Desperation attack
+!!Preemptive manipulation
+
+Getting preempitves/side attacks is the basics of many JRPG TASes. In this case, all the randomness at the start of a fight (preemptive, startup ATB, monster vigor) is determined based on the time the fight triggered. More precisely, the game uses the number of frames (range 1-60) within one second of the in-game timer as the RNG seed. As a consequence, there are 60 different battle configurations possible. The method to trigger preemptives/side attacks is simply to delay the beginning of the fight. This works well on the world map, but on towns/dungeons, there is a frame rule concerning movement: we can only start walking 1 every 4 frames. Because of this, we can only have access to 15 configurations out of the 60 ones. To be able to change this frame rule, there are several possibilities:
+* Go in and out of the menu. You can set the frame rule you want by delaying the exit of the menu by 1, 2 or 3 frames. This is however very costly if you don't have any menuing to do.
+* Delay the enter in the dungeon from the world map. This is only useful for the first fight in the dungeon.
+* Delay the end of a previous winning fight. Fights usually have at least an XP gain message. You can delay the confirmation of this message which will alter the frame rule. Because most fights are escaped, this has a limited application. It is very useful for the Minecart sequence for example.
+* Add lag frames during the previous fight. By entering the inventory and moving items, it can make the game lag, which will alter the frame rule after the fight. The most reproducible way to add 1 lag frame is to switch the weapon and the buckler. Switching them again may add another lag frame, but this is definitively not an exact science. This trick is used extensively through the whole run.
+
+!!Desperation attack
 
 Desperation attacks are rather secret and powerful attacks in ff6. Under specific conditions, the attack command has 1/16 chance of triggering a character specific technique dealing massive damage to one enemy. Those conditions are:
-- The character must be in the near fatal status, when HPs are lower than 1/8 of max HPs
-- The number of battle ticks must be over 768. In other words, we have to wait for about 25 seconds after the beginning of the fight.
-- The character must not be in the Muddle, Image, Clear or Zombie status
-- You can only cast one desperation attack per character per fight
-- Gau, Umaro and special characters don't have a desperation attack
+* The character must be in the near fatal status, when HPs are lower than 1/8 of max HPs
+* The number of battle ticks must be over 768. In other words, we have to wait for about 25 seconds after the beginning of the fight.
+* The character must not be in the Muddle, Image, Clear or Zombie status
+* You can only cast one desperation attack per character per fight
+* Gau, Umaro and special characters don't have a desperation attack
 
 The desperation attacks are magical attacks that ignore the defense of the enemy. So the amount of damage only depends on the level, the magic stats of the caster and the random variation. Strago and Relm desperation attacks are different, they kill instantly the target.
 
 
-Message speed tricks
+!!Message speed tricks
 
 Escaping fights is usually faster to do when getting a preemptive or side attack. Sometimes, however, not all characters will run away immediately. The remaining characters will run away about two seconds after. This usually happens when the number of characters is higher than the number of enemies. In this case, there are two ways to get a faster run-away. The first solution is to get a front attack instead, and try to run away as soon as possible. This is used during Sabin scenario mainly, for the single Ghost fights. It saves about one second. The other solution is to set the Message Speed to 2 in the Options. In this case, all run-away during preemptives/side attacks will be perfect. The downside is of course that each battle message text box will be longer by about 16 frames. This includes the "Preemptive"/"Side attack" message and every command message. This is used twice in this run, during Mt Kolts and during Terra scenario, as there are many random fights and we control a team of three characters.
 
-Run-away trick
+!!Run-away trick
 
-The way the RNG works during fights is that you have a general counter stored in $BE which is used as an index in the random static array $C0FD00-$C0FDFF. Each time the game pulls a random number, it increases the RNG index by one. During the fight, when no action is playing, the RNG index increases by one unit per frame. When an action is starting, the game pulls several random numbers to compute the action random factors (random damage, miss, criticals, chance of giving status, etc.) and then the RNG index is frozen until the animation of the action ended. If several actions are queued, then the RNG index will just increase by the number of random numbers pulled between each action.
+The way the RNG works during fights is that you have a general counter stored in $BE which is used as an index in the random static array {{$C0FD00-$C0FDFF}}. Each time the game pulls a random number, it increases the RNG index by one. During the fight, when no action is playing, the RNG index increases by one unit per frame. When an action is starting, the game pulls several random numbers to compute the action random factors (random damage, miss, criticals, chance of giving status, etc.) and then the RNG index is frozen until the animation of the action ended. If several actions are queued, then the RNG index will just increase by the number of random numbers pulled between each action.
 
 There are several ways to manipulate the RNG, which is very useful to get criticals, desperation attacks and to manipulate the enemies behavior. The first one is simply to delay an action so that the RNG index will be frozen at a different value, and subsequent actions will use different random numbers. However, this is only possible when no action was made before it (typically the first action of the fight). Sometimes, you want to cast actions as fast as possible to queue them before enemies actions. In that case, there is a very useful trick using the run-away (R+L).
 
-The game checks about every two seconds (more often with the Haste status) if each character is running away. If it is the case, it pulls a random number between 1 and a character specific run-away constant (stored in $3D71, $3D73, $3D75, $3D77 for each character) and adds it to a counter (stored in $3D70, $3D72, $3D74, $3D76 for each character). If this counter gets over the run-away difficulty (usually 2 times the number of enemies) then the character will escape the fight. The important part here is that you can make the game pull random numbers, thus increasing the RNG index, even during action animations. Let's say the animation takes 4 seconds and you have 4 characters in your party. At the end of the animation, you can set the RNG index to 9 different values. This is also useful to try to cast the desperation attack as soon as possible after the time limitation is passed. This trick is not working for preemptive/side attack battles, as the run-away counters are not increasing.
+The game checks about every two seconds (more often with the Haste status) if each character is running away. If it is the case, it pulls a random number between 1 and a character specific run-away constant (stored in {{$3D71, $3D73, $3D75, $3D77}} for each character) and adds it to a counter (stored in {{$3D70, $3D72, $3D74, $3D76}} for each character). If this counter gets over the run-away difficulty (usually 2 times the number of enemies) then the character will escape the fight. The important part here is that you can make the game pull random numbers, thus increasing the RNG index, even during action animations. Let's say the animation takes 4 seconds and you have 4 characters in your party. At the end of the animation, you can set the RNG index to 9 different values. This is also useful to try to cast the desperation attack as soon as possible after the time limitation is passed. This trick is not working for preemptive/side attack battles, as the run-away counters are not increasing.
 
 If this tricks allows you to increase the RNG index during animations, you can also do the opposite. When no animation is played, you can freeze the RNG index by popping the "Can't run away" text box. This was used several times in the run.
 
+!!Move across objects/event tiles
 
-Sketch glitch
+!Simple clipping
 
-In short
+Entering and exiting the menu at the right time allows you to move on the same tile as a moving guard. This is used during Locke scenario to skip Celes.
+
+!Simple party switch trick
+
+During a few sequences in the game where you have multiple parties to manage, you can switch between parties using the Y button. If you press X to enter the menu and then Y during the fade-out, you will still switch to the next party and the menu will open for them. You can also press again Y during the fade-in before the menu opens to switch again to another party, and this can be iterated for as long as you want. During all that time, monsters on the field will move, but fights won't trigger if a monster gets close to you. This trick is used during the Kefka at Narshe sequence, to allow a monster to move close to you without triggering the fight, saving about 8 seconds.
+
+!Advanced party switch trick
+
+A related trick can be used to go through a tile associated with an event without triggering it. To do that, press Y just before reaching the event tile and use the above trick (X then Y during the fade-out) to go back to the party with the menu opened. Then, change the leader of the party and close the menu. You are now able to move without triggering the event of the tile you were standing on. This trick was used to skip Inferno in Kefka's tower. This trick can be linked multiple times to disable continuous event tiles, which allowed us to move on a specific conveyor belt backwards, skipping another boss in the tower (Poltergeist).
+
+!!Sketch glitch
+
+!In short
 
 The sketch glitch is the major glitch used in this run. Missing the sketch command with Relm, for specific characteristics of the 28th spell of the first character, may induce a partial rewriting of your inventory, graphical glitches, freezing or even a softlock.
 
-How does it work?
+!How does it work?
 
-During a successful sketch, the game will get which monster was sketched and look for the sprite of that monster in the memory. It will copy the sprite in the RAM and display a flipped version on the screen. When the sketch misses, the game will still do all the procedure except for the display. The origin of the problem is in function C2/F5D2:
+During a successful sketch, the game will get which monster was sketched and look for the sprite of that monster in the memory. It will copy the sprite in the RAM and display a flipped version on the screen. When the sketch misses, the game will still do all the procedure except for the display. The origin of the problem is in function {{C2/F5D2}}:
 
-```
-...
-C2/F5E1: A0 03 00        LDY #$0003
-C2/F5E4: B1 76           LDA ($76),Y
-C2/F5E6: 0A              ASL
-C2/F5E7: AA              TAX
-C2/F5E8: C2 20           REP $20
-C2/F5EA: BD 01 20        LDA $2001,X
-C2/F5ED: AA              TAX
-C2/F5EE: 7B              TDC
-C2/F5EF: E2 20           SEP $20
-C2/F5F1: 22 D1 24 C1     JSL $C124D1
-...
-```
+ ...
+ C2/F5E1: A0 03 00        LDY #$0003
+ C2/F5E4: B1 76           LDA ($76),Y
+ C2/F5E6: 0A              ASL
+ C2/F5E7: AA              TAX
+ C2/F5E8: C2 20           REP $20
+ C2/F5EA: BD 01 20        LDA $2001,X
+ C2/F5ED: AA              TAX
+ C2/F5EE: 7B              TDC
+ C2/F5EF: E2 20           SEP $20
+ C2/F5F1: 22 D1 24 C1     JSL $C124D1
+ ...
 
-During a successful sketch, instruction `LDA ($76),Y` loads the enemy slot number (between 0 and 5), and get the monster id by looking at the array $2001-$200C containing the id (16-bit integer) of the 6 monsters present in battle. However, when the sketch misses, instruction `LDA ($76),Y` loads 0xFF instead of the enemy slot number. So `LDA $2001,X` is wrongly fetching the 16-bit integer `$20FF-$2100` as the enemy id. This address is in the middle of the battle spell table. `$20FF` contains information about the usability of the 28th spell of the first character (was used/available). `$2100` contains the aiming byte of the 28th spell of the first character.
+During a successful sketch, instruction {{LDA ($76),Y}} loads the enemy slot number (between 0 and 5), and get the monster id by looking at the array {{$2001-$200C}} containing the id (16-bit integer) of the 6 monsters present in battle. However, when the sketch misses, instruction {{LDA ($76),Y}} loads 0xFF instead of the enemy slot number. So {{LDA $2001,X}} is wrongly fetching the 16-bit integer {{$20FF-$2100}} as the enemy id. This address is in the middle of the battle spell table. {{$20FF}} contains information about the usability of the 28th spell of the first character (was used/available). {{$2100}} contains the aiming byte of the 28th spell of the first character.
 
-The function `C1/24D1` and sub-functions are executed with an incorrect enemy id. The next problem arises in function C1/215F. This function loads the disposition of tiles in an enemy sprite. Indeed, tiles are stored in one dimension in the game memory, and it uses a mapping to place the tiles to build a two-dimensional sprite. The list of mappings for each enemy sprite is located starting $D2A820. This function loads the mapping corresponding to the enemy id and stores it in the array $822D-$824D. From this array, the game derives the height and the width of the enemy sprite in tile units. This is the critical portion of the function:
+The function {{C1/24D1}} and sub-functions are executed with an incorrect enemy id. The next problem arises in function {{C1/215F}}. This function loads the disposition of tiles in an enemy sprite. Indeed, tiles are stored in one dimension in the game memory, and it uses a mapping to place the tiles to build a two-dimensional sprite. The list of mappings for each enemy sprite is located starting {{$D2A820}}. This function loads the mapping corresponding to the enemy id and stores it in the array {{$822D-$824C}}. From this array, the game derives the height and the width of the enemy sprite in tile units. This is the critical portion of the function:
 
-C1/21B8: A6 00        LDX $00
-C1/21BA: C2 20        REP #$20       (set 16-bit accumulator)
-...
-C1/21BE: BD 2D 82     LDA $822D,X    (get mappings for this row of tiles of the bitmap)
-C1/21C1: F0 0B        BEQ $21CE      (if none of the tiles in this row are set, branch)
-...
-C1/21C7: E8           INX 
-C1/21C8: E8           INX 
-C1/21C9: E0 20 00     CPX #$0020
-C1/21CC: D0 F0        BNE $21BE      (loop for all 16 rows.
-                                      when this loop exits, X will hold the # of rows
-                                      in the image that have any valid tiles [times 2].)
+ C1/21B8: A6 00        LDX $00
+ C1/21BA: C2 20        REP #$20       (set 16-bit accumulator)
+ ...
+ C1/21BE: BD 2D 82     LDA $822D,X    (get mappings for this row of tiles of the bitmap)
+ C1/21C1: F0 0B        BEQ $21CE      (if none of the tiles in this row are set, branch)
+ ...
+ C1/21C7: E8           INX 
+ C1/21C8: E8           INX 
+ C1/21C9: E0 20 00     CPX #$0020
+ C1/21CC: D0 F0        BNE $21BE      (loop for all 16 rows.
+                                       when this loop exits, X will hold the # of rows
+                                       in the image that have any valid tiles [times 2].)
 
 The game computes the height of the sprite as the number of valid (non-zero) tiles in the mapping. Keep in mind that if the enemy id is wrong, the mapping array will also be wrong. If this mapping array starts with the 0 value, the computed height of the enemy sprite will be zero.
 
-Now, the most important function is function C1/22A5 which copies each tile of the enemy sprite from ROM to RAM, depending on the mapping array. This function is basically a double for loop on the width and height of the enemy sprite. Then, a tile is copied for every bit set in the mapping array. Here is the portion of the code that decrements the sprite height and loops, at the end of the function:
+Now, the most important function is function {{C1/22A5}} which copies each tile of the enemy sprite from ROM to RAM, depending on the mapping array. This function is basically a double 'for' loop on the width and height of the enemy sprite. Then, a tile is copied for every bit set in the mapping array. Here is the portion of the code that decrements the sprite height and loops, at the end of the function:
 
-C1/22D7: CE 53 82     DEC $8253    (decrement adjusted monster height/8
-                                    [iow, its tile height])
-C1/22DA: D0 C9        BNE $22A5    (loop if we haven't finished processing/copying
-                                    all the rows of the monster's tiles.)
+ C1/22D7: CE 53 82     DEC $8253    (decrement adjusted monster height/8
+                                     [iow, its tile height])
+ C1/22DA: D0 C9        BNE $22A5    (loop if we haven't finished processing/copying
+                                     all the rows of the monster's tiles.)
 
 Notice that the game *first* decrements the height, and then checks if it's non-zero. What happens if the height is zero in the first place? The variable becomes 255, so the game will assume that the sprite has a tile height of 256! This is a very high value, the maximum tile height planned by the game is 16. This will lead to many more tile copies than normally, which will overwrite many other memory locations.
 
-Which variables affect the outcome of the glitch?
+!Which variables affect the outcome of the glitch?
 
 As said earlier, the game will load the availability and the aiming of the 28th spell of the first character, and interpret them as the enemy id. During battle startup, the spell list of all character present in the battle is compressed and stored for each character. The compression is as followed: the whole spell list is placed in a table of three columns. If a row does not contain any spell known by a character present in the battle, that row is deleted. The remaining table is placed in the Magic menu for each character, with only their known spells. If we want to have a spell in the 28th slot, we have to learn at least 10 spells that will each one fill a different row. The route for the present TAS is to learn:
-- Cure (Lv1), Fire (Lv3), Antdot (Lv6) and Drain (Lv12) with Terra's natural magic
-- Sleep (10 AP), Mute (13 AP) and Slow (15 AP) with Siren
-- Bio (13 AP) and Break (20 AP) with Shoat
-- Muddle (15 AP) and Imp (20 AP) with Stray
+* Cure (Lv1), Fire (Lv3), Antdot (Lv6) and Drain (Lv12) with Terra's natural magic
+* Sleep (10 AP), Mute (13 AP) and Slow (15 AP) with Siren
+* Bio (13 AP) and Break (20 AP) with Shoat
+* Muddle (15 AP) and Imp (20 AP) with Stray
 
 Here is how the magic list looks like during a fight where all 10 spells are present. 10 rows are filled so that Break is placed at the 28th position.
 
-*Cure*     Cure 2    Cure 3 
-Life     Life 2    *Antdot* 
-(Remedy   Regen     Life 3)
+ __Cure__     Cure 2    Cure 3
+ Life     Life 2    __Antdot__
+ Remedy   Regen     Life 3
+ -------------------------
+ Scan     __Slow__      Rasp
+ __Mute__     Safe      __Sleep__
+ __Muddle__   Haste     Stop
+ Bserk    Float     __Imp__
+ Rflect   Shell     Vanish
+ Haste2   Slow2     Osmose
+ Warp     Quick     Dispel
 -------------------------
-Scan     *Slow*      Rasp
-*Mute*     Safe      *Sleep*
-*Muddle*   Haste     Stop 
-Bserk    Float     *Imp* 
-(Rflect   Shell     Vanish)
-(Haste2   Slow2     Osmose)
-(Warp     Quick     Dispel)
--------------------------
-*Fire*     Ice       Bolt 
-Poison   *Drain*     Fire 2 
-Ice 2    Bolt 2    *Bio* 
-(Fire 3   Ice 3     Bolt 3)
-*Break*    Doom      Pearl 
-(Flare    Demi      Quartr)
-(X-Zone   Meteor    Ultima)
-(Quake    W.Wind    Merton)
--------------------------
+ __Fire__     Ice       Bolt
+ Poison   __Drain__     Fire 2
+ Ice 2    Bolt 2    __Bio__
+ Fire 3   Ice 3     Bolt 3
+ __Break__    Doom      Pearl
+ Flare    Demi      Quartr
+ X-Zone   Meteor    Ultima
+ Quake    W.Wind    Merton
+ -------------------------
 
 Now that we know how to place a spell at the 28th position, we can focus on the characteristics of the spell that affect the sketch glitch. First, the aiming of the spell consists of an 8-bit integer where each bit has a different meaning:
 * Bit 0 = Cursor Moveable
@@ -118,35 +137,139 @@ Now that we know how to place a spell at the 28th position, we can focus on the 
 * Bit 2 = Autoselect both parties
 * Bit 3 = Autoselect one party
 * Bit 4 = Auto Confirm
-* Bit 5 = Manual Party Select
+* Bit 5 = Multiple Selection possible
 * Bit 6 = Cursor Start on Enemy
-* Bit 7 = Randomize selection
+* Bit 7 = Random selection among all enemies and allies
 
 There are 13 different aiming bytes represented in this game:
-* `0x00` (Self): Warp
-* `0x01` (Allies or enemies, single): Safe, Haste, Bserk, Rflect, Shell, Vanish, Life, Life 2
-* `0x02` (Self): Quick
-* `0x03` (Allies, single target): Antdot, Remedy, Regen, Life 3
-* `0x04` (Allies and enemies, multi target): Quake, W Wind, Merton
-* `0x21` (Allies or enemies, single or multi target): Float, Cure, Cure 2, Cure 3
-* `0x29` (Allies or enemies, multi or single target): Haste 2
-* `0x41` (Enemies or allies, single target): Poison, Drain, Break, Doom, Pearl, Flare, Scan, Slow, Rasp, Mute, Sleep, Muddle, Stop, Imp, Osmose, Dispel
-* `0x43` (Enemies, single target): Demi
-* `0x61` (Enemies or allies, single or multi target): Fire, Ice, Bolt, Fire 2, Ice 2, Bolt 2, Bio, Fire 3, Ice 3, Bolt 3
-* `0x69` (Enemies or allies, multi or single target): Slow 2
-* `0x6A` (Enemies, multi target): X-Zone
-* `0x6E` (Enemies, multi target): Quartr, Meteor, Ultima
+* {{0x00}} (Self): Warp
+* {{0x01}} (Allies or enemies, single): Safe, Haste, Bserk, Rflect, Shell, Vanish, Life, Life 2
+* {{0x02}} (Self): Quick
+* {{0x03}} (Allies, single target): Antdot, Remedy, Regen, Life 3
+* {{0x04}} (Allies and enemies, multi target): Quake, W Wind, Merton
+* {{0x21}} (Allies or enemies, single or multi target): Float, Cure, Cure 2, Cure 3
+* {{0x29}} (Allies or enemies, multi or single target): Haste 2
+* {{0x41}} (Enemies or allies, single target): Poison, Drain, Break, Doom, Pearl, Flare, Scan, Slow, Rasp, Mute, Sleep, Muddle, Stop, Imp, Osmose, Dispel
+* {{0x43}} (Enemies, single target): Demi
+* {{0x61}} (Enemies or allies, single or multi target): Fire, Ice, Bolt, Fire 2, Ice 2, Bolt 2, Bio, Fire 3, Ice 3, Bolt 3
+* {{0x69}} (Enemies or allies, multi or single target): Slow 2
+* {{0x6A}} (Enemies, multi target): X-Zone
+* {{0x6E}} (Enemies, multi target): Quartr, Meteor, Ultima
 
-We used in this route the 0x41 aiming byte because it gives access to the shortest setups. The second characteristics is the availability of the spell. It is represented as a 8-bit integer, whose bit 7 is set if the spell is not available (grayed) or cleared if it is. When the game updates the availability of the spell (function `C2/5763`), the integer is shifted right and the new availability bit is stored in bit 7. At the beginning of the battle, the integer is initialised as 0xFF and the game updates the availability of every spell. The game calls its update function when:
-- The holder of the spell received a MP heal by an item. Items having the "Concerns MP" flag set are Tincture, Ether, X-Ether, Elixir, Megalixir, Sleeping Bag and Tent.
-- The holder of the spell consumes MP using the Magic, X-Magic, Esper or Lore commands. Spells costing 0 MPs don't trigger the update.
-- The holder of the spell is imped or de-imped.
+We used in this route the {{0x41}} aiming byte because it gives access to the shortest setups. The second characteristics is the availability of the spell. It is represented as a 8-bit integer, whose bit 7 is set if the spell is not available (grayed) or cleared if it is. When the game updates the availability of the spell (function {{C2/5763}}), the integer is shifted right and the new availability bit is stored in bit 7. So the whole integer At the beginning of the battle, the integer is initialised as {{0xFF}} and the game updates the availability of every spell.
+
+During the fight, the game calls this update function when:
+* The holder of the spell received a MP heal by an item. Items having the "Concerns MP" flag set are Tincture, Ether, X-Ether, Elixir, Megalixir, Sleeping Bag and Tent.
+* The holder of the spell consumes MP using the Magic, X-Magic, Esper or Lore commands. Spells costing 0 MP don't trigger the update.
+* The holder of the spell is imped or de-imped.
+
 The game does *not* call the update function when:
-- The holder of the spell attacks with a weapon with the "critical MP" property (like the Rune Edge), thus reducing his MPs.
-- The holder gets the Mute status. This is because the Magic command is disabled, not every individual spell, as opposed to the Imp status where every spell except Imp is disabled.
+* The holder of the spell attacks with a weapon with the "critical MP" property (like the Rune Edge), thus reducing his MPs.
+* The holder gets the Mute status. In this case, the Magic command is disabled, not every individual spell, as opposed to the Imp status where every spell except Imp are disabled.
 
-At the battle startup and after each turn, function `C2/083F` is called. For a given entity, if his Imp status is toggled, the attack/spell costs him MP to cast, or the attack itself affects his MP because he's a target [or the caster, if it's a draining attack]), then it updates availability of entries on Esper, Magic and Lore menus (function `C2/5763`).
+During a sketch, we saw that the game is using the mapping array {{$822D-$824C}} to determine if a tile must be copied from ROM to RAM. During a sketch glitch, however, as the sprite height is incorrectly set to 256, the corresponding mapping array will be {{$822D-$842C}}, overflowing the next portion of memory. Addresses from {{$824D}} to {{$8258}} store local variables, but addresses starting {{$8259}} store the offsets of each enemy position. These offsets depend on the formation mold. Every enemy formation is using a specific formation mold, which gives the coordinates and maximal dimension of every enemy. There are 13 different molds used in the game. Each formation mold will lead to overwriting different parts of memory during a sketch glitch.
 
-In function `C2/5763`, carry is set if Imped and spell not Imp, or insufficient MP. Then, spell availability is rotated right, putting the carry in bit 7.
+!Taking advantage of the sketch glitch
+
+The main beneficial outcome of the sketch glitch is to erase part of your in-battle inventory ({{$2686-$2B85}}). At the end of the battle, the game loads the in-battle inventory into the general inventory ({{$1869-$1A68}}). Thus all items that appeared during the sketch glitch are kept. The in-battle inventory stores 5 bytes per item:
+
+* Byte 0: Item id
+* Byte 1: Item flags
+** 08: Is a shield
+** 10: Is a weapon
+** 20: Can be thrown
+** 40: Is a tool
+** 80: Not usable as an item in battle
+* Byte 2: Item targeting
+** 01: Cursor Moveable
+** 02: One Side Only
+** 04: Autoselect both parties
+** 08: Autoselect one party
+** 10: Auto Confirm
+** 20: Multiple selection possible
+** 40: Cursor Start on Enemy
+** 80: Random selection among all enemies and allies
+* Byte 3: Item quantity
+* Byte 4: Item equipability
+** 01: Onscreen character 0 can't equip item
+** 02: Onscreen character 1 can't equip item
+** 04: Onscreen character 2 can't equip item
+** 08: Onscreen character 3 can't equip item
+
+Added to the fact that you have access to a bunch of new items, the sketch glitch also allows you to change the characteristics of an item without changing its type. Indeed, on some item slots, only part of the characteristics will be overwritten. Thanks to this, you are able to flag any item, leading to useful tricks like:
+* Flagging an item as a weapon or a shield and equip it during the fight. The item will be kept in your equipment after the fight. All special effects of the item will be operative even if the item is not in the right spot (e.g. a Moogle Charm in the right hand will still remove random encounters)
+* Flagging an item as usable in fight and use it
+* Duplicating an item by overwriting its quantity
+
+The Japanese equip-anything glitch still applies here. This glitch, only possible in the Japanese version of the game, allows you to equip an item in an equipment slot if:
+# you put that item in the 255th slot
+# you don't have any item in your inventory that fits in that slot
+# you select Optimize
+In the US version of the game, the developers disabled the 255th slot, but a sketch glitch can still put an item in that slot. You can then move that item into an equipment slot by the same method.
+
+The sketch glitch also overwrite the in-battle Magic menu. This menu starts at address $208E for the first character and contains 4 bytes for each spell:
+* Byte 0: Spell id
+* Byte 1: Spell availability
+* Byte 2: Aiming byte
+* Byte 3: Spell MP cost
+We don't have as much freedom as the inventory, but a sketch glitch can give inaccessible magics. Magics are not only white/black/grey magics that we learn during the game, but also Espers, Skeans, SwdTechs, Blitz, Dances, Slots, Magitek, Lores, enemy attacks, desperation attacks and Interceptor attacks.
+
+Also, for a few formation molds (2, 4 and 8), the sketch glitch overwrites the command list. This list is stored starting $202E and takes three bytes per command:
+* Byte 0: Command id
+* Byte 1: Command availability
+* Byte 2: Aiming byte
+
+Unfortunately, those molds are known to freeze the game easily.
+
+The consequences of the sketch glitch for each mold and spell setup can be generated from this lua script ([=userfiles/info/18358557059086853]) which outputs a spreadsheet.
+
+! Goggles glitch
+
+If a character attacks with the Goggles item (which can be placed here thanks to the sketch glitch) and another character opens the Magic menu at the same time, the menu will show items from the inventory is scrolled up or down. If an item is used, the character will cast the magic whose id corresponds to the id of the item. For example, if a character uses the Antidote item (id {{0xF2}}) in the glitched Magic menu, he will cast Cyan's desperation attack Back Blade (id {{0xF2}}). In this run, we used the Goggles glitch with the items Black Belt (id {{0xD5}}) and X-Potion (id {{0xEA}}) to cast the magics Engulf (id {{0xD5}}) and Bababreath (id {{0xEA}}). Because Black Belt is not a usable item, a sketch glitch is needed to flag it as usable. The magic Bababreath is normally cast by the boss Phunbaba on the party, it removes the target from the battle. It also works when casting on an enemy. The magic Engulf is described below.
+
+! Engulf
+
+There is an enemy in the game called Zone Eater in the World of Ruin who has the Engulf attack. This attack removes the target from the battle. If all the party is engulfed, the party is sent inside the Triangle Island cave, where the secret character Gogo can be recruited. Thanks to the sketch glitch, the Engulf magic can be cast by a character as soon as Relm is recruited, in the World of Balance. If cast by a character, the magic will auto-target an enemy, so Muddle is necessary to be able to cast it on a character. In that case, if the entire party is engulfed, it will be sent inside the Triangle Island cave. If the party exists the cave using the light exit on top (using a Warp Stone won't work), it will appear on the Triangle Island in the World of Ruin. The airship will have the same coordinates as where it was left. Because of this, the party will be stuck if the airship was not left on the island beforehand.
+
+!!Unused tricks
+
+! Sleeping Bag
+
+When you make an item usable in fight thanks to the sketch glitch, most items that were not supposed to be used will cast Fire. Some items, however, will have its own effect. When using a Sleeping Bag on someone, it will recover all his MPs with no item animation. Compared to a Tincture or an Elixir, the Sleeping Bag is about 100 frames faster to use. It could have been possible to use it instead of the Tincture in the run, but the required sketch glitch before being able to use the Sleeping Bag made this strat slower in the end.
+
+! Other glitched weapons
+
+The sketch glitch can allow a character to equip as a weapon every item in the game. When a character attacks, the game loads the weapon graphics from {{$ECE400+8*id-$ECE400+8*(id+1)-1}} to {{$626B-$6272}}. Address {{$6270}} (unknown purpose, launching flag?) varies between 0 and 4 for regular weapons. Address {{$6270}} is used in the following code:
+ C1/C269:    AD7062      LDA $6270
+ C1/C26C:    297F        AND #$7F
+ C1/C26E:    0A          ASL A
+ C1/C26F:    AA          TAX 
+ C1/C270:    7C73C2      JMP ($C273,X)
+ 
+ Pointers to code
+ 
+ C1/C273:    86C2        (00)        
+ C1/C275:    99C2        (01)
+ C1/C277:    7DC2        (02)    
+ C1/C279:    12C3        (03)
+ C1/C27B:    73C3        (04)
+
+For glitched weapons, however, address {{$6270}} can take arbitrary values. So the above code will jump to a random place within C2 bank.
+
+! Tier change
+
+With a sketch glitch against a formation mold 4, with a 0x41 aiming spell and 0xBF availability, the second command of the third character will be replaced with the command 32, which triggers the tier change during the Kefka fight. In this case, the tier change will load another enemy formation depending on the aiming of the command. The binary representation of the aiming value is the following two-bytes integer: {{0 0 foe6 foe5 foe4 foe3 foe2 foe1 0 0 0 0 char4 char3 char2 char1}}. So we can load enemy formations with an id as high as 16143, knowing that formations are normally included between 0 and 575. This leads to [https://www.youtube.com/watch?v=0d3GKzEg2nU|aberrant formations].
+
+! Goggles glitch with other menus
+
+The Goggles glitch was used in this run with the Magic menu. It can be used with many more menus, but this was not actually deeply tested:
+* SwdTech: Cyan will cast a magic whose id will be the id of the item + a constant (85). Indeed, the game indexed the SwdTechs starting 0, and adds a constant to get the corresponding magic id. For example, if you use the item Fire Shield (id 96) in the glitched SwdTech menu, Cyan will cast the magic [https://www.youtube.com/watch?v=QSQL79JFrbM|Tek Laser] (id 181 = 96 + 85). The magic seems to automatically target the enemy, even if the target was set to be on the party.
+* Blitz: We couldn't get it to work
+* Tools: Edgar will damage the enemy, and sprites will start to move in an [https://www.youtube.com/watch?v=GF3D6RHguDY|odd way] through the screen
+* Rage: Not tested, but we supposed that it would not have any effect, because there are 256 rages already
+* Slots: Setzer will cast a magic whose id is stored in the address {{$C24E4A + itemid}}. For example, if Setzer uses the Potion item (id {{0xE9}}) in the glitched Slots menu, he will cast the magic whose id is stored in {{$C24F33}} which is the desperation attack [https://www.youtube.com/watch?v=8gORmleyaDs|MoogleRush] (id {{0xFA}}).
+* Command: Instead of opening a sub-menu, we can change character by using X or Y. If done right, the command menu of the new character will be glitched as the item menu. This should allow us to cast any command.
+
+! Alternative wrong warps
 
 Goggles glitch
