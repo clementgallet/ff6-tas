@@ -2,9 +2,9 @@
 -- Begin of configuration
 -------------------------
 
-MOLD_NUMBER = 12
+MOLD_NUMBER = 0 -- number between 0 and 12.
 
-DISPLAY_COMMANDS = true
+DISPLAY_COMMANDS = false
 DISPLAY_ITEMS = true
 DISPLAY_MAGIC = true
 DISPLAY_ENGULF = false
@@ -119,87 +119,6 @@ end
 
 console.writeline(table.concat(header,";"))
 
--- -------------------------------------------------------------------------------------------------
--- The following commented code is to computed formation dependent memory. For now, we don't need it
--- -------------------------------------------------------------------------------------------------
-
-
--- for fi = 0, 575 do -- formation index
-
--- char* formation_array; -- $CF6200
-
-  -- formation_offset = fi * 0xF;
-  -- mould_index = bit.rshift(memory.readbyte(0x0F6200 + formation_offset), 4) -- $2000
-  -- enemy_presence = bit.band(memory.readbyte(0x0F6201 + formation_offset), 0x3F) -- $61AA, xx654321
-  -- enemy_id = memory.readbyte(0x0F6202 + formation_offset) -- not true id, will add the boss flag later
-  -- boss_flags = memory.readbyte(0x0F620E + formation_offset)
-  
-  -- Get mould info to fetch maximum sprite width and height
-  -- mould_info_pointer =  memory.read_u16_le(0x02D01A + 2 * mould_index)
-  
-  
-  -- for i = 0,5 do
-    -- if (bit.check(enemy_presence, i)) then
-	  -- if (bit.check(boss_flags, i)) then
-	    -- enemy_id = enemy_id + 0x100
-      -- end
-	  
-      -- mould_slot_info_pointer = mould_info_pointer + i * 4 + 2
-	  -- maximum_width = memory.readbyte(0x120002 + mould_slot_info_pointer) -- $8256
-	  -- maximum_height = memory.readbyte(0x120003 + mould_slot_info_pointer) -- $8257
-
-      -- monster_offset = bit.band((monster_id * 5),0xFFFF) -- get monster offset, keep it inside two bytes
-      -- monster_stencil_bit = bit.check(memory.readbyte(0x127002 + monster_offset), 6)
-	  -- monster_size_template = memory.readbyte(0x127004 + monster_offset) -- $81AA
-
-      -- if monster_stencil_bit ~= 0 then
-	    -- temp_tiles_array = memory.readbyterange(0x12AC24 + monster_size_template * 32, 0x20)
-	  -- else
-	    -- temp_tiles_array = memory.readbyterange(0x12A824 + monster_size_template * 8, 0x20)
-	  -- end
-
-	  -- tiles_array = {}
-	  
-	  -- i = 1
-      -- for u, v in ipairs(first_tile_array) do
-	    -- if monster_stencil_bit then
-          -- tiles_array[i] = v
-          -- i = i + 1
-	    -- else
-          -- tiles_array[i] = v
-          -- tiles_array[i+1] = 0
-	      -- i = i + 2
-	    -- end
-	  -- end
-	  
-	  -- get the OR of every other element in tiles_array
-	  -- or_bits = 0
-	  -- sprite_height = 0
-	  -- for i = 0,0xF do
-	    -- if (tiles_array[2*i] == 0) and (tiles_array[2*i+1] == 0) then
-		  -- break
-		-- end
-		-- or_bits = bit.bor(or_bits, bit.lshift(tiles_array[2*i],8) + tiles_array[2*i+1])
-		-- sprite_height = sprite_height + 2
-	  -- end
-
-	  -- for i = 0,0xF do
-        -- if bit.check(or_bits, 0xF-i) then
-		  -- sprite_width = i
-		-- end
-      -- end
-
-	  -- sprite_width = min(sprite_width, maximum_width) -- $8252
-	  -- sprite_height = min(sprite_height, maximum_height) -- $8253
-	  
-	  -- TBC...
-	-- end
-	
--- -------------------------------------------------------------------------------------------------
--- End of formation dependent computations
--- -------------------------------------------------------------------------------------------------
-
-
   ---------------------------------------------------------------------------
   -- Function C1/3E72: Fill the sprite offset ($8257+) for a specific mold
   ---------------------------------------------------------------------------
@@ -233,17 +152,11 @@ console.writeline(table.concat(header,";"))
     mold_pointer = mold_pointer + 1 -- go to next grid square
   end
   
---  console.writeline(mold_shifting)
-
  for ai = 1, 8 do -- aiming byte
    for sa = 0, 255 do -- spell availability
     
     monster_id = aiming_bytes[ai] * 256 + sa
-	-- console.writeline(monster_id)
 	monster_offset = bit.band((monster_id * 5),0xFFFF) -- get monster offset, keep it inside two bytes
-	
-	
-	
 	
 	
 	---------------------------------------------------------------------------
@@ -266,8 +179,6 @@ console.writeline(table.concat(header,";"))
 	  monster_size_template = monster_size_template + 0x0100
 	end
 
-	
-	
 	
 	
 	---------------------------------------------------------------------------
@@ -300,7 +211,6 @@ console.writeline(table.concat(header,";"))
 	end
 	
 	-- Compute the sprite width
-	-- sprite_width = min(bit.band(formation_pointer+3,0xFF),formation_width) -- $8251, using the uninitialised $12 that was previously used in C1/254E
 	sprite_width = formation_width -- $8251, using the uninitialised $12 that was previously used in C1/254E
 	  
 	  
@@ -364,7 +274,6 @@ console.writeline(table.concat(header,";"))
 		  ---------------------------------------------------------------------------
 
 		  if monster_color_depth then
-			  -- console.writeline(string.format("%s;%s", bizstring.hex(bit.band(screen_address+offset_ram, 0xFFFF)),bizstring.hex(monster_sprite_pointer+offset_rom)))
 			for n = 0, 7 do
 			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
 			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
@@ -375,7 +284,6 @@ console.writeline(table.concat(header,";"))
 			end
 		    offset_rom = bit.band(offset_rom + 0x18, 0xFFFF)
 		  else
-			-- console.writeline(string.format("%s;%s", bizstring.hex(bit.band(screen_address+offset_ram, 0xFFFF)),bizstring.hex(monster_sprite_pointer+offset_rom)))
 			for n = 0, 15 do
 			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n)
 			  write_log[loop_nb][bit.band(screen_address+offset_ram+2*n+1, 0xFFFF)] = memory.readbyte(monster_sprite_pointer+offset_rom+2*n+1)
@@ -399,8 +307,6 @@ console.writeline(table.concat(header,";"))
 	  end
 	end -- end for cur_height
 	
-	
-	-- console.writeline(write_log)
 	
     ---------------------------------------------------------------------------
 	-- Extract and format relevent writes from the write log

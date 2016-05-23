@@ -1,9 +1,7 @@
-memory.usememorydomain("CARTROM")
-
 drawpixel = function(x,y,color)
 	if x < 0 or y < 0 then return end
 	if x >= 0x100 or y >= 0xE0 then return end
-	gui.drawPixel(x,y,color)
+	gui.pixel(x,y,color)
 end
 
 min = function(a,b) if a < b then return a else return b end end
@@ -15,7 +13,7 @@ horline = function(x1,y,x2,color)
 	x1 = min(max(0,x1),255)
 	x2 = min(max(0,x2),255)
 	if y >= 0 and y < 239 then
-		gui.drawLine(x1,y,x2,y,color)
+		gui.line(x1,y,x2,y,color)
 	end
 end
 
@@ -24,7 +22,7 @@ vertline = function(x,y1,y2,color)
 	y1 = min(max(0,y1),238)
 	y2 = min(max(0,y2),238)
 	if x >= 0 and x < 256 then
-		gui.drawLine(x,y1,x,y2,color)
+		gui.line(x,y1,x,y2,color)
 	end
 end
 
@@ -33,7 +31,7 @@ startgauge = function(x,y,w)
 end
 drawgauge = function(c,m,col)
 	if m == 0 then m = 1 end
-	local g = c*gw/m
+	local g = bit.quotent(c*gw,m)
 	horline(gx,gy,gx+g,col)
 	horline(gx+g,gy,gx+gw,0x7f000000)
 	gy = gy-1
@@ -50,13 +48,13 @@ end
 
 readsnesstring = function(from,maximum)
 	local res = ""
-	local tmp = memory.readbyte(from)
+	local tmp = memory2.ROM:byte(from)
 	local i = 0
 	while tmp ~= 0xFF do
 		if i == maximum then break end
 		res = res .. tochar(tmp)
 		from = from+1
-		tmp = memory.readbyte(from)
+		tmp = memory2.ROM:byte(from)
 		i = i+1
 	end
 	return res
@@ -64,13 +62,13 @@ end
 
 readsnesstringram = function(from,maximum)
 	local res = ""
-	local tmp = mainmemory.readbyte(from)
+	local tmp = memory2.WRAM:byte(from)
 	local i = 0
 	while tmp ~= 0xFF do
 		if i == maximum then break end
 		res = res .. tochar(tmp)
 		from = from+1
-		tmp = mainmemory.readbyte(from)
+		tmp = memory2.WRAM:byte(from)
 		i = i+1
 	end
 	return res
@@ -133,9 +131,9 @@ end
 get_special = function(id)
 	-- Information about the special attack
 	-- This is used by rage, sketch, control.
-	local special = memory.readbyte(0x0f001f+0x20*id)
+	local special = memory2.ROM:byte(0x0f001f+0x20*id)
 	local specialn = readsnesstring(0x0fd0d0+id*10,10)
-	local no_damage,no_dodge = bit.check(special, 6),bit.check(special,7)
+	local no_damage,no_dodge = bit.test(special, 6),bit.test(special,7)
 	special = special % 0x40
 	desc = "???"
 	if special == 0x30 then desc = "absorb hp"
