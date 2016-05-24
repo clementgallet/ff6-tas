@@ -1,0 +1,114 @@
+[module:youtube|v=axnOPbBt_qs]
+
+* Emulator: lsnes rr2-beta23
+* Rom: Final Fantasy III (U) (V1.0)
+* Aims for fastest time
+* Uses game-breaking glitch
+* Abuses programming errors
+* Manipulates luck
+
+During the [2725M|previous TAS], we managed to get the Moogle Kutan in our crew to save the world. We are pleased to announce that this time, we also managed to get Kurin with us. As a side effect, we saved more than two hours and a half over the previous TAS, achieving a final time of 32 minutes and 50 seconds using a new game breaking glitch involving 52 gameover in a row on the world map.
+
+!! Gameover glitch
+
+On May 2015, a [https://www.youtube.com/watch?v=gAlIrkiqA_k|new ff6 glitch] was discovered, where dying 52 times in a row on the world map leads to odd consequences. Often the game will freeze, sometimes it will trigger glitched cutscenes.
+
+! Deciphering
+
+The game uses a script language for writing events, which contains everything from music, graphical effects, invoking windows, dialogues, character movements, etc. Two events in this game have a behaviour very close to the JSR and RTS instructions. The first one (event B2) saves the current event pointer into a stack and jumps to a series of sub events. The second one (event FE) finishes the series of sub events by loading the event pointer from the top of the stack.
+
+During a gameover screen, the game calls event B2 twice but only once event FE. This has the consequence of filling the event pointer stack, which can lead to a stack overflow with repeating gameovers. This is generally unnoticed, because entering any inside map will clear the event pointer stack.
+
+The event pointer stack is stored starting $0594 and the size of the stack is stored in $E8 and $12E8 (backup). The memory around this stack is largely unused, the only addresses that are often written by the game are located at $0630-$0632. Multiple times per frame, the game stores into $0630 the horizontal scanline location, into $0631 the vertical scanline location and into $0632 the maximum of all vertical scanline locations.
+
+After the 51 gameover, $E8 contains 0x99. At the 52nd gameover, the game writes the event pointer to $062D-$062F then to $0630-$0632. Before the game executes event FE, the values in $0630-$0632 have changes multiple times, leading to the glitch. The game loads those values as the current event pointer, and executes events starting this location.
+
+By conducting a lot of tests, we observed that address $0630-$0632 is dependent on the frame where the gameover is confirmed, the inputs pressed 3 frames before confirmation and the number of characters in the party.
+
+! Triggering the ending
+
+To trigger the game ending, one way is to set the event pointer to the address of the ending, which is located at {{$CA0F70}} (just after the boss fight). However, the game will freeze if we jump there because it will try to move characters which are not present. Pointing after the post-Kefka dialogues does work, which was done in the present TAS (address {{$CA134E}}).
+
+As expected, no value of {{$0630-$0632}} comes near the values required to launch the ending sequence. Luckily, most of the values in {{$0630-$0632}} actually point to RAM addresses, between {{$1700}} and {{$2000}}. Here is a summary of what is present in these addresses:
+
+ $1600-$184F: Character data (592 bytes, 37 bytes each character)
+ $1850-$185F: Setup of current party (which party/slot/row for each character)
+ $1860-$1862: Gold
+ $1863-$1865: Game time
+ $1866-$1868: Steps
+ $1869-$1968: Items possessed
+ $1969-$1A68: Item quantities
+ $1A69-$1D4C: Espers, Magic, SwdTechs, Blitz, Lores, Rages, Dances
+ $1D4D-$1DC6: Menu configuration
+ $1DC7-$1FFF: Various stuff 
+ 
+Our goal is to write somewhere in RAM an event that will jump to the ending. A few events can do that: B2, B3, B6, B7, BD, BE, C0-CF, following by the destination address (e.g. {{B2 4E 13 00}} jumps to {{$CA0000 + $00134E = $CA134E}}). The values inside {{$0630-$0632}} heavily depend on the number of characters in the party. Here is roughly which address we have access:
+* 1 character: {{$1700-$1900}}
+* 2 characters: {{$1900-$1B00}}
+* 3 characters: {{$1B00-$1D00}}
+* 4 characters: {{$1D00-$1FFF}}
+
+The earliest point where we can trigger the glitch is with a party of two characters. With this party, we can jump to the addresses storing the inventory, the Espers and magics. The problem is that we cannot write any of the event above in memory because no item with the corresponding id is available, and we are limited to 99 for item quantities. Of course, we don't have any Esper of magic available.
+
+Then, for a very small portion, we have access to a 1 character party (solo Terra) during Figaro castle. With this party, we can jump to part of the character data, gold, game time, steps and part of the inventory. Character data would have been very encouraging, but the only characters we can control are Terra and Locke, which are at the beginning of the section, outside our range. Like before, we cannot write the event code using the inventory, but we can use either one byte of the Gold or one byte of the step counter easily. The second problem was to write the destination address in RAM next to the event code, which is of the form {{XX 13 00}} with XX being several values possible between 0x20 and 0x70. We couldn't manage to write these values, however we could make an intermediate jump to a much more friendly area in RAM where we can control values: the config menu. It is located starting {{$1D4D}} and luckily, we have access to the Mithril Pike (id 1D), the Buckler (id 5A) and the Mithril Shield (id 5C).
+
+Here is the state of the memory starting $1860:
+
+ |     Gold     |   Game Time  | Step counter |                  Inventory
+ | A0 | xx | xx | xx | xx | xx | C1 | xx | xx |   01    |  00  |   5A    |   1D    |   5C    |
+                                                Mithril | Dirk | Buckler | Mithril | Mithril |
+                                                Knife   |      |         |  Pike   | Shield  |
+
+We tried to jump directly to the step counter, but we only could jump to the Gold address. That is why we manipulated the first byte of the Gold value to be A0, an event which takes 5 bytes as argument, so that we arrive at the beginning of the step counter.
+
+Event C1 has 3 arguments: t1 (2 bytes), t2 (2 bytes) and addr (3 bytes). The meaning of this event is: if the story bit t1 or the story bit t2 is true, then jump to {{$CA0000+addr}}. We manipulated t2 with the MithrilKnife and the Dirk so that the corresponding story bit is true. So the game jumps at {{$CA0000 + $5C1D5A = $261D5A}}, which is the RAM address {{$1D5A}}, in the middle of the colours of the windows.
+
+Now we have full control over the events we can trigger. We previously changed the value of those colours so that the bytes starting $1D5A are:
+* {{5B}} is a no argument event that does (almost) nothing. We couldn't write {{B2}} on the first byte because every other value must be below 7E.
+* {{B2 00 53 00}} jumps to address {{$CA0000 + $005300 = $CA5300}}. This is the very end of the world destruction sequence that loads the World of Ruin maps. It was necessary to avoid a softlock during the game ending.
+* {{A9}} triggers the game opening, because why not.
+* {{5C}} is another dummy event like {{5B}}
+* {{B2 4E 13 00}} jumps to address {{$CA0000 + $00134E = $CA134E}}. This triggers the ending sequence.
+
+!! Run comments
+
+! Narshe
+
+As opposed to the previous TAS, we did not need to level-up Terra so that other characters who join get a higher level. However, we still need Terra to be at least level 4 so that the quick kill on Whelk is possible. The fastest way we found was to escape the first and fourth fights, to fight the third one and to make Wedge escape the second fight. This gives level 4-3-2 for Terra, Vicks and Wedge, respectively. The quick kill on Whelk was barely possible by manipulating the random damage to always be a high value. The fight against Marshal and Lobo was improved from the previous TAS by manipulating both Lobo not to attack. Both Mithril Pike and Mithril Shield are removed from Mog for the glitch.
+
+Extra steps were used to manipulate the battle RNG, because we had to do a lot of steps anyway for the glitch.
+
+! Figaro
+
+The inventory is sorted as described above during the two random fights to Figaro castle. After being solo Terra, two Tonics and 4 Echo Screen are bought to get Gold to {{xxxxA0}}. Then the remaining number of steps are performed to get the number {{xxxxC1}} at the second fight in the world map.
+
+The first fight in the desert is manipulated to get Terra's HP as low as possible. A critical could not be manipulated for the Sand Ray because this enemy has the bad habit of skipping his turn; it was replaced with his special attack.
+
+! Glitch
+
+One step before the second fight, the battle speed was set to 1 so that the enemy can act faster. The fight to get the gameover to was chosen to be a solo enemy, so that the initial ATB are very high. 51 gameover later, the message and gameover screen were confirmed at the right frame and the input was chosen so that the game loads address $1860 as the event pointer. As explained above, this eventually triggers the ending.
+
+!! Special Thanks
+
+* __pirohiko__ for posting the new glitch in the ff6 topic
+* __Catastrophe__ for helping disassembling the new glitch
+* __Yousei__ for providing a very detailed description of the ff6 ROM, including the list of events
+* __Imzogelmo__ for providing a dump of the entire list of events of the game
+
+!! Suggested screenshots
+
+Frames 125522, 129091, 131130 and 190385
+
+[http://i.imgur.com/VDUlm6w.png] [http://i.imgur.com/K61oX5f.png] [http://i.imgur.com/mt51Xzp.png] [http://i.imgur.com/iBwOub3.png]
+
+----
+
+[user:ars4326]: Replaced movie file with updated version that accesses full ending.  Claimed for judging!
+
+[user:ars4326]: Hello, Keylie and Kadmony.  Fantastic work on executing this unique 'game end glitch' method, as well as listing out the intricate details in the submission text.  The minor strategic optimizations made during battles were a treat to watch, as well.  
+
+Altogether though, as others have expressed in the thread, there honestly just isn't too many ways that one can make 52 straight game-overs entertaining.  The payoff of watching the glitched ending (with more Moogles, this time around!) was indeed enjoyable, but the more repetitive 15+ minute lead-in must also be considered.  Outstanding work, nonetheless!
+
+Accepting for publication to the Vault!
+
+[user:fsvgm777]: Processing.
