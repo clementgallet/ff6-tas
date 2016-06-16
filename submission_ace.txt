@@ -7,9 +7,9 @@
 * Executes arbitrary code
 * Features mid-frame resets
 * Corrupts save data
-* Ends input *early*
+* Ends input early
 
-We have shown a proof of concept for arbitrary code execution in the Japanese version of the game a year ago. However, it requires to gather one of several items that are only available in the late game (after about 2 hours of run), so we let it go. After the discovery of the game over glitch that lead to the [2922M|latest TAS], featuring 15 boring minutes of game overs, we were eager to find another route that could beat this time and be more fun to watch. This is where we remembered of the mid-frame reset technique used in a couple of published TAS, that might lead to getting these items much quicker. This was the beginning of our third work on this game.
+We have shown a proof of concept for arbitrary code execution in the Japanese version of the game a year ago. However, it requires to gather one of several items that are only available in the late game (after about 2 hours of run), so we let it go. After the discovery of the game over glitch that lead to the [2922M|latest TAS], featuring 15 boring minutes of game overs, we were eager to find another route that could beat this time and be more fun to watch. This is where we remembered of the mid-frame reset technique used in a couple of published TAS, that might lead to getting these items much quicker. This was the beginning of our third work on this game. Comments are embedded in the above video and are available [https://raw.githubusercontent.com/clementgallet/ff6-tas/master/ff6ace_captions.srt|here].
 
 !! Glitch leading to ACE
 
@@ -36,7 +36,7 @@ During a fight, when you attack with a weapon, the game loads the weapon graphic
  $C1/C227 C0 C2                       call $C1/C2C0 when $6240 = 3
  $C1/C229 21 C3                       call $C1/C321 when $6240 = 4
 
-However, for items that are not weapons, address {{$6240}} can store any value, so that the jump instruction above leads to many wrong addresses. Among all the wrong jumps, the case with address {{$6240 = 0x07}} (weapons X-Ether, Gold Hairpin, Czarina Ring or Charm Bangle) is interesting because the game jumps to address C1/8D7A which starts with instruction:
+However, for items that are not weapons, address {{$6240}} can store any value, so that the jump instruction above leads to many wrong addresses. Among all the wrong jumps, the case with address {{$6240 = 0x07}} (weapons X-Ether, Gold Hairpin, Czarina Ring or Charm Bangle) is interesting because the game jumps to address {{C1/8D7A}} which starts with instruction:
 
  $C1/8D7A 1B          TCS      Push accumulator to the stack pointer
 
@@ -60,15 +60,16 @@ This technique can only be used once. The principle is that the game starts insi
 * We save on slot 2 and reset just after {{$1F61}} is overwritten
 * When loading slot 2, we will be on the World Map at coordinates corresponding to the uninitialized values.
 
-In lsnes emulator, it is possible to manipulate the initial RAM values to some extend by setting the value of the Real Time Clock that acts as a seed. The first value of the RAM is set to the lower byte of the RTC, and each consecutive value is generated using a recursion formula:
- value = (value >> 1) ^ (((value & 1) - 1) & 0xedb88320)
+In lsnes emulator, it is possible to manipulate the initial RAM values to some extend by setting the value of the Real Time Clock that acts as a seed. The first value of the RAM is set to the lower byte of the RTC, and each consecutive value is generated using a recursive formula:
+
+ value = (value >> 1) ^ ( ( (value & 1) - 1) & 0xedb88320)
 
 ! Map warping
 
 Map id is stored as a 2-bytes value in address {{$1F64}}. Using the same principle as with coordinates, it is possible to warp to a new map by using one byte from one map and another byte from a second map. Here is the list of (hopefully) all save points in the World of Balance, and the new interesting maps that we have access using this trick:
 
- Save Points                    | Map ID
- -----------------WoB-----------------------------------
+ Map                            | Map ID
+ -----------------WoB Save Points-----------------------
  World Map                      | 0000
  Narshe cave entrance           | 0029
  Narshe cave                    | 0032
@@ -91,7 +92,7 @@ Map id is stored as a 2-bytes value in address {{$1F64}}. Using the same princip
  Esper Cave                     | 0177
  Floating Continent - beginning | 018A
  Floating Continent - cave      | 0166
- -----------------New-----------------------------------
+ -----------------Interesting Maps ---------------------
  Daryll's Tomb                  | 0129
  Fanatics Tower                 | 016B, 0167, 016E, 0172
  Caves to the Ancient Castle    | 0192
@@ -142,7 +143,7 @@ The current route uses the third way of recruiting Sabin and Cyan. Although it m
 
 As started in the previous section, attacking with one of the four items corrupts the stack by setting the stack pointer to {{0x000E}}. The game eventually reaches a {{RTS}} instruction, so that it loads the 16-bit integer {{$0F-$10}} and jumps to {{C1/$10$0F}}. In address {{$0E-$0F}} we have the &16-bit battle timer. It starts at 0 at the beginning of the battle and increases by one every frame. In {{$10}} we have a temporary variable that, at the moment of the glitch, can be either {{0x0E}}, {{0xAE}}, {{0xCE}} or {{0xEE}}. In consequence, we can jump to any address {{C1/0Exx}}, {{C1/AExx}}, {{C1/CExx}} or {{C1/EExx}}.
 
-We are looking at jumping into RAM or SRAM, and this means getting out of the {{C1}} address bank. We only have limited options to leave this bank: executing jump instructions {{JSL (22)}} or {{JML (5C, DC)} that use a full 24-bit address; {{RTL (6B)}} is also possible. By examining if there is such instruction in our accessible addresses, we found a good candidate:
+We are looking at jumping into RAM or SRAM, and this means getting out of the {{C1}} address bank. We only have limited options to leave this bank: executing jump instructions {{JSL (22)}} or {{JML (5C, DC)}} that use a full 24-bit address; {{RTL (6B)}} is also possible. By examining if there is such instruction in our accessible addresses, we found a good candidate:
 
  $C1/CEC7 5C 6F 60 AE  JML $AE606F
 
@@ -157,7 +158,7 @@ So we looked at another solution, by trying to increase our range of accessible 
  $C1/CE5F 0A          ASL A      Multiply by 2
  $C1/CE60 85 10       STA $10    Stores in $10-$11
 
-By choosing carefully our battle counter value, we could control {{$11}} and {{$12}} and jump to new addresses. Now, we looked again at {{JML}} and {{JSL}} instructions but in the whole {{C1}} bank. We found the instruction {{JSL $A41E20}} at several places in the code ({{C1/A21C}}, {{C1/A239}}, {{C1/A256}}, {{C1/A276}}, {{C1/A30C}}, {{C1/A32E}}, {{C1/A3CE}}, {{C1/A3E6}}). This jumps to the RAM address {{$7E1E20}} which is at the beginning of a unused segment. Like with the teleport anywhere trick, we manipulated the first two values to be {{70 98    BVS $1DBA}}, so that we jump to {{$1DBA}} which is at the end of the menu configuration. Then we change the colors to write in $1DBA {{70 A5   BVS $1D61}} to jump again at the beginning of the menu color configuration, because we won't have enough place to write the full code.
+By choosing carefully our battle counter value, we could control {{$11}} and {{$12}} and jump to new addresses. Now, we looked again at {{JML}} and {{JSL}} instructions but in the whole {{C1}} bank. We found the instruction {{JSL $A41E20}} at several places in the code ({{C1/A21C}}, {{C1/A239}}, {{C1/A256}}, {{C1/A276}}, {{C1/A30C}}, {{C1/A32E}}, {{C1/A3CE}}, {{C1/A3E6}}). This jumps to the RAM address {{$7E1E20}} which is at the beginning of a unused segment. Like with the teleport anywhere trick, we manipulated the first two values to be {{70 98 (BVS $1DBA)}}, so that we jump to {{$1DBA}} which is at the end of the menu configuration. Then we change the colors to write in {{$1DBA}} {{70 A5 (BVS $1D61)}} to jump again at the beginning of the menu color configuration, because we won't have enough place to write the full code.
 
 Before writing the full code, we must be sure to be able to execute the above {{JML}} instruction. If we write the battle counter in binary and look at the obtained values for {{$11}} and {{$12}}, we get:
 
@@ -173,7 +174,7 @@ We found one good match which is:
  Battle counter: 01000110 11010001 (4A 51)
  Return address: 10100010 01010010 (A2 52)
 
-The game will first jump to {{C1/CE4A}}, which will execute the code above that writes to {{$11}} and {{$12}}. The, when hitting the {{RTS}} instruction, it will jump to the value in {{$11-$12 + 1}}:
+The game will first jump to {{C1/CE4A}}, which will execute the code above that writes to {{$11}} and {{$12}}. Then, when hitting the {{RTS}} instruction, it will jump to the value in {{$11-$12 + 1}}:
  $C1/A253 0E 00 A7      ASL $A700
  $C1/A256 22 20 1E A4   JSL $A41E20
  
@@ -216,7 +217,7 @@ We need to find a fight where eventually the holder of the glitched weapon will 
     Rand. spell: L.5 Doom or L.4 Flare or L.3 Muddle
     Rand. spell: Blaze or Nothing or Nothing
 
-Locke is naturally level 6 as we are doing Narshe with Terra level 4 and he gets a +2 bonus when joining, so we will be the holder of the glitched weapon as he is sensible to L.3 Muddle. The battle strat is then to kill all enemies except one Goblin, and manipulate his RNG so that we will cast L.3 Muddle and Locke will attack at the exact moment to trigger ACE. This took about 20 hours of work actually, more than the entire rest of the TAS, but the result is good.
+Locke is naturally level 6 as we are doing Narshe with Terra level 4 and he gets a +2 bonus when joining, so he will be the holder of the glitched weapon as he is sensible to L.3 Muddle. The battle strat is then to kill all enemies except one Goblin, and manipulate his RNG so that we will cast L.3 Muddle and Locke will attack at the exact moment to trigger ACE. This took about 20 hours of work actually, more than the entire rest of the TAS, but the result is good.
 
 !! Run comments
 
