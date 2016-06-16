@@ -1,4 +1,4 @@
-[module:youtube|v=axnOPbBt_qs]
+[module:youtube|v=ykJyvOiXjAQ]
 
 * Emulator: lsnes rr2-beta23
 * Rom: Final Fantasy VI (J)
@@ -130,7 +130,7 @@ The initial route we designed involved an early Narshe escape. When you load the
 
 The consequence of this code is that a savefile is considered as corrupted if the checksum does not match, or if the checksum is 0. In our case, because the checksum is stored at the end of the savefile, it will be 0. So even if the checksum is correct, we won't be able to load the savefile.
 
-! Current Route
+! Actual route
 
 The first option was still thought to be possible at first, by transferring the event flags from one save at the beginning of Narshe to another save after Narshe. However, we could not do it in practice because we could not control the checksum to match between both savefiles. This was due to the fast that we have 11 Moogles joining the party, which modifies a lot of values in memory and greatly altered the checksum. With only the game options at our disposal to modify the checksum we are limited by the range we can access. In the end, we had to drop this quickest choice.
 
@@ -218,26 +218,49 @@ We need to find a fight where eventually the holder of the glitched weapon will 
 
 Locke is naturally level 6 as we are doing Narshe with Terra level 4 and he gets a +2 bonus when joining, so we will be the holder of the glitched weapon as he is sensible to L.3 Muddle. The battle strat is then to kill all enemies except one Goblin, and manipulate his RNG so that we will cast L.3 Muddle and Locke will attack at the exact moment to trigger ACE. This took about 20 hours of work actually, more than the entire rest of the TAS, but the result is good.
 
+!! Run comments
+
+! Movie creation
+
+We starts the TAS by checking "Random initial state" and setting "Initial RTC value" to {{29857}}. This will write {{$1F60 = 9B-CD}} for world map teleport and {{$1E20 = 70-98}} for ACE.
+
+! Narshe
+
+Nothing special about Narshe itself. We must get Terra to level 4 so Locke joins at level 6. Level 4 Terra is mandatory anyway to get a quick kill on Whelk.
+
+Before leaving Narshe, we save at the beginners class so that the uninitialized values for world map coordinates does not get rewritten. Then, we go up and open the menu so the map Y coordinate takes the value of {{0x34}} and save. We enter Narshe again and go again at the coordinate X = {{0x18}} and save/reset on the previous slot so that it now contains the map coordinates {{18-34}}.
+
+! Outside Narshe
+
+We load the save file in the class room and save/reset on the save outside Narshe to overwrite the world map coordinates. By loading the file, we will be placed at coords {{9B-CD}} in the World Map in the Vector continent.
+
+! To the Sealed Gate
+
+We use another world map teleport using Y coord from Narshe save and X coord from Vector to arrive near Gau's father house. We buy here a Sprint Shoes and sell Locke's weapon. We use another teleport to arrive in the bridge to the cave. We enter the cave, grab the Assassin weapon for Locke and make our way to the save point. We save/reset once to transfer the weapon to the savefile around Gau's father house, and another save/reset to write the map id on the savefile that has the map coords {{18-34}}.
+
+! Imperial Camp
+
+We continue our way until the Imperial Camp, and do the whole sequence (almost) normally. We have help from Locke's weapon which has a 1/4 chance of killing the target. This does not work on MTek Armor, too bad.
+
+! Phantom Train
+
+We use a save/reset to teleport over the tile of the Forest entrance. This allows us to enter from the exit, and cut a part of the Forest. We enter the train and save/reset to overwrite only the first byte of the map id. By loading this savefile, we appear in the cave to the Ancient Castle at coordinates {{18-34}}. If we didn't manipulate the coordinates in Narshe, we would appear in the walls out of bounds, and we would be stuck.
+
+! Ancient Castle
+
+We enter the Castle, and use the fights to move Locke's Assassin at the bottom of the inventory. We can then equip the Assassin on Cyan using the equip glitch. We grab the X-Ether and leave the Castle. We equip the X-Ether on Locke and a Shield. The shield is mandatory, otherwise Locke would attack with bare hands during the fight and the glitch won't trigger. We write the code to execute by changing the colors in the menu.
+
+! Last fight
+
+We kill the two enemies with Cyan, using the wait trick (opening a menu to freeze the enemies ATB during an animation). Then we produce lag in the RNG counter by selecting and un-selecting a weapon, to get the right setup. When we confirm Locke's steal command, the movie ends. After 5 minutes of fight, Locke attacks and the ending triggers.
 
 !! Special Thanks
 
-* __bover_87__ for posting the enemy battle script
+* __bover_87__ for the enemy battle script FAQ
 * __ff6hacking website__ for centralizing and showing new data on ff6
 
 !! Suggested screenshots
 
-Frames 125522, 129091, 131130 and 190385
+Frames 73132
 
-[http://i.imgur.com/VDUlm6w.png] [http://i.imgur.com/K61oX5f.png] [http://i.imgur.com/mt51Xzp.png] [http://i.imgur.com/iBwOub3.png]
-
-----
-
-[user:ars4326]: Replaced movie file with updated version that accesses full ending.  Claimed for judging!
-
-[user:ars4326]: Hello, Keylie and Kadmony.  Fantastic work on executing this unique 'game end glitch' method, as well as listing out the intricate details in the submission text.  The minor strategic optimizations made during battles were a treat to watch, as well.  
-
-Altogether though, as others have expressed in the thread, there honestly just isn't too many ways that one can make 52 straight game-overs entertaining.  The payoff of watching the glitched ending (with more Moogles, this time around!) was indeed enjoyable, but the more repetitive 15+ minute lead-in must also be considered.  Outstanding work, nonetheless!
-
-Accepting for publication to the Vault!
-
-[user:fsvgm777]: Processing.
+[https://raw.githubusercontent.com/clementgallet/ff6-tas/master/Screenshots/ff6ace_73132.png]

@@ -1,0 +1,420 @@
+1
+00:00:10,120 --> 00:00:15,780
+This is a Tool-Assisted Speedrun created by Kadmony and Keylie
+
+2
+00:00:18,780 --> 00:00:24,480
+The final time is 31:47.69, using 11562 rerecords
+
+3
+00:00:30,960 --> 00:00:36,220
+You can visit tasvideos.org for more information
+
+4
+00:00:38,860 --> 00:00:44,980
+The route in this TAS is to execute arbitrary code using a glitched weapon attack
+
+5
+00:00:46,840 --> 00:00:53,460
+The Japanese version of the game features a glitch that allows you to equip any item in any slot
+
+6
+00:00:54,620 --> 00:01:01,720
+Simply put the item in the 256th slot, make sure you cannot equip any item in that slot, and select "Optimize"
+
+7
+00:01:03,940 --> 00:01:11,280
+When attacking with a glitched weapon, the game calls an incorrect routine for the attack animation
+
+8
+00:01:13,400 --> 00:01:22,040
+The routine we want to call is delivered by either the X-Ether, Charm Bangle, Czarina Ring or Gold Hairpin
+
+9
+00:01:23,320 --> 00:01:29,240
+All these items are only found in the late game (>_<)
+
+10
+00:01:30,460 --> 00:01:36,080
+However, using the sub-frame reset technique, we can gather them much quicker (^_^)
+
+11
+00:01:38,120 --> 00:01:43,960
+In this route, we will take an X-Ether from the Ancient Castle
+
+12
+00:01:46,560 --> 00:01:57,140
+We access the Ancient Castle by combining the map id of the Cave to the Sealed Gate (0186) and the Phantom Train (0092)
+
+13
+00:01:57,600 --> 00:02:03,140
+This gives id 0192 which is the cave to the Ancient Castle
+
+14
+00:02:19,240 --> 00:02:23,860
+We select Bio Blast with Terra for the next fight
+
+15
+00:02:29,780 --> 00:02:35,880
+Battle Speed 6 (slowest), Message Speed 1 (fastest) and cursor on memory
+
+16
+00:02:53,120 --> 00:02:58,140
+Having no window opened speeds up the fight ending
+
+17
+00:03:56,140 --> 00:04:01,920
+We need to win another fight so Terra reaches level 4
+
+18
+00:04:45,160 --> 00:04:51,360
+Opening a window freezes the enemy ATB (wait trick)
+
+19
+00:05:04,960 --> 00:05:09,880
+We use the escape to modify the RNG
+
+20
+00:11:16,200 --> 00:11:20,780
+The second group is the strongest
+
+21
+00:11:57,720 --> 00:12:02,840
+We don't need to unequip Mog's weapon this time
+
+22
+00:13:06,840 --> 00:13:12,800
+We save once in Narshe to keep the uninitialized World Map coordinates in memory
+
+23
+00:13:14,040 --> 00:13:20,520
+We will be using these coordinates to teleport elsewhere in the World Map
+
+24
+00:13:32,720 --> 00:13:37,520
+We open the menu here to store Y = 0x34 in the map coords
+
+25
+00:13:40,320 --> 00:13:46,220
+We enter again and this time store X = 0x18 in the map coords
+
+26
+00:13:47,640 --> 00:13:50,640
+We save and reset after overwriting X map coord
+
+27
+00:13:51,440 --> 00:13:55,940
+Now we have one savefile with X = 0x18 and Y = 0x34 (used later)
+
+28
+00:13:56,980 --> 00:14:01,560
+We save/reset after overwriting the world map coords
+
+29
+00:14:02,420 --> 00:14:07,620
+This transfers the uninitialized World Map coords to the save in the World Map
+
+30
+00:14:08,040 --> 00:14:12,260
+allowing us to reach any destination (but only once)
+
+31
+00:14:13,120 --> 00:14:16,920
+This time, we overwrite only the World Map X coord
+
+32
+00:14:17,660 --> 00:14:21,940
+Together with Narshe Y coord, this produces new coords
+
+33
+00:14:25,680 --> 00:14:30,900
+We buy Sprint Shoes and sell Locke's weapon
+
+34
+00:14:38,300 --> 00:14:42,580
+Again, overwriting only the X coord
+
+35
+00:14:46,120 --> 00:14:51,740
+This allows us to enter the Cave to the Sealed Gate
+
+36
+00:14:57,900 --> 00:15:01,160
+Grabbing Locke's Assassin weapon
+
+37
+00:15:02,660 --> 00:15:07,840
+It has a 1/4 chance of inflicting the Death status
+
+38
+00:15:09,600 --> 00:15:15,020
+You may notice we change the colors of the menu before doing any save/reset
+
+39
+00:15:16,920 --> 00:15:23,080
+This is to manipulate the save checksum, otherwise the save is considered as corrupted
+
+40
+00:15:24,460 --> 00:15:30,980
+We want to reach the savepoint here, because the map id is 0182
+
+41
+00:15:32,380 --> 00:15:37,760
+Together with the first savepoint of the Phantom Train (id 0092)
+
+42
+00:15:38,780 --> 00:15:45,460
+We can produce a new id 0192 which is the cave to the Ancient Castle
+
+43
+00:15:47,000 --> 00:15:53,940
+We also needed the previous coords setup in Narshe so that we appear there inbounds
+
+44
+00:15:55,800 --> 00:16:01,520
+We do a first save/reset to transfer Locke's weapon to the other savefile
+
+45
+00:16:03,520 --> 00:16:10,440
+And a second one to write the map id on the savefile with the right map coords
+
+46
+00:16:14,440 --> 00:16:19,180
+Next step is to recruit Sabin and Cyan
+
+47
+00:16:20,880 --> 00:16:26,860
+We need both of them to enter the Phantom Train
+
+48
+00:16:28,340 --> 00:16:33,080
+There are several ways to recruit both characters
+
+49
+00:16:33,920 --> 00:16:39,760
+We chose to do the whole Imperial Camp sequence
+
+50
+00:16:41,580 --> 00:16:45,760
+We will have a little help from Locke
+
+51
+00:16:57,460 --> 00:17:02,380
+Shadow's theme is not supposed to be played here btw
+
+52
+00:18:17,720 --> 00:18:24,280
+Because of our the game script is coded, we will keep Locke and Terra in the next fight
+
+53
+00:18:31,460 --> 00:18:34,980
+Well, let's use Locke weapon then
+
+54
+00:19:52,260 --> 00:19:56,840
+I wonder if the developers put a Death protection on Kefka
+
+55
+00:20:00,180 --> 00:20:01,960
+Nope
+
+56
+00:20:03,540 --> 00:20:08,080
+This saves a few seconds as it skips some dialogues
+
+57
+00:20:23,000 --> 00:20:28,460
+We equip the Black Belt on Locke and set Battle Speed on 1 (fastest)
+
+58
+00:20:31,580 --> 00:20:35,480
+We have Kuku in our team instead of Sabin
+
+59
+00:20:37,100 --> 00:20:42,300
+He is weak (level 2) but can still kill the soliders with a critical
+
+60
+00:20:43,660 --> 00:20:46,680
+Terra however cannot
+
+61
+00:25:08,440 --> 00:25:15,000
+MTek Armors are immune to Death so we cannot use Locke
+
+62
+00:25:53,060 --> 00:25:57,660
+Kuku is too weak to kill an MTek Armor himself
+
+63
+00:26:17,660 --> 00:26:22,020
+We will use a little shortcut with a save/reset
+
+64
+00:26:36,500 --> 00:26:43,120
+Now we can enter the Forest from the exit, which is much closer to the Train
+
+65
+00:27:07,120 --> 00:27:13,180
+The game would softlock here without both Sabin and Cyan
+
+66
+00:27:51,260 --> 00:27:56,660
+Save/reset to write the first byte of the map id
+
+67
+00:28:06,020 --> 00:28:13,720
+To be able to execute our custom code, we need to attack with the X-Ether at a specific frame of the fight
+
+68
+00:28:15,060 --> 00:28:21,360
+At frame 19025 exactly, which is after 5 minutes of fight
+
+69
+00:28:23,000 --> 00:28:29,020
+Thanks to the TAS convention, we only care about the last input
+
+70
+00:28:30,840 --> 00:28:37,220
+So we must find a way to make a character attack without any input
+
+71
+00:28:38,520 --> 00:28:44,100
+The solution we used is to get the character muddled
+
+72
+00:28:44,940 --> 00:28:50,400
+He will use a random command by himself
+
+73
+00:28:51,580 --> 00:28:58,860
+The enemy we want to fight is the Goblin, which can cast L.3 Muddle when alone
+
+74
+00:29:00,040 --> 00:29:06,220
+Locke is currently level 6, so he will be holding the X-Ether
+
+75
+00:29:08,000 --> 00:29:18,080
+In our custom code, we must take care of ending the fight without any input to do (no XP/Gold message)
+
+76
+00:29:20,580 --> 00:29:31,020
+Then we just have to manipulate the enemy to cast L.3 Muddle after 5 minutes while keeping Locke alive, with no input
+
+77
+00:29:32,580 --> 00:29:41,080
+This was easily the hardest part of the TAS, and it took more time than doing the rest of the TAS
+
+78
+00:29:48,300 --> 00:29:54,000
+We start to move Assassin at the bottom of the inventory
+
+79
+00:29:55,340 --> 00:30:01,480
+We want Cyan to equip that weapon, but he normally cannot
+
+80
+00:30:03,160 --> 00:30:08,600
+That's why we will use the equip glitch
+
+81
+00:30:13,380 --> 00:30:16,100
+Grabbing the X-Ether
+
+82
+00:30:18,720 --> 00:30:24,760
+We equip the Assassin on Cyan and give the shield to Locke
+
+83
+00:30:26,880 --> 00:30:32,620
+Now we move the X-Ether at the bottom of the inventory
+
+84
+00:30:34,440 --> 00:30:41,140
+We cannot do it in one fight, so we will need to finish from the menu (slower)
+
+85
+00:30:46,980 --> 00:30:51,960
+Moving the X-Ether down and selecting Optimize
+
+86
+00:30:53,200 --> 00:30:59,380
+Now the full code that triggers the ending is written with the window colors
+
+87
+00:31:00,460 --> 00:31:06,920
+If you are interested in the technical details, read the tasvideos submission text
+
+88
+00:31:16,900 --> 00:31:25,400
+We need to kill the two small enemies, because the remaining one has a different AI script when alone
+
+89
+00:31:27,620 --> 00:31:33,720
+With some wait trick, Cyan can kill both before they have a chance to attack
+
+90
+00:31:34,520 --> 00:31:40,160
+We queue some commands with Terra and Kuku to end input earlier
+
+91
+00:31:42,420 --> 00:31:47,640
+By selecting and deselecting a weapon, we cause lag in the RNG counter
+
+92
+00:31:48,500 --> 00:31:54,260
+This was the last input, so the TAS ends here!
+
+93
+00:31:55,720 --> 00:32:00,300
+Now enjoy 4 minutes of nothing
+
+94
+00:32:11,020 --> 00:32:16,700
+Our custom code that will be executed consists on:
+
+95
+00:32:20,080 --> 00:32:25,120
+1. Store the ending address in the event pointer
+
+96
+00:32:27,640 --> 00:32:32,200
+2. Set a flag to remove the ending softlock
+
+97
+00:32:33,500 --> 00:32:40,240
+This softlock happens when you trigger the ending without entering the World of Ruin
+
+98
+00:32:41,860 --> 00:32:48,340
+3. Fix the stack that has been corrupted by the glitch
+
+99
+00:32:49,880 --> 00:32:56,740
+4. Remove all enemies from the fight. It triggers the end of the fight
+
+100
+00:32:59,360 --> 00:33:05,000
+5. Remove the Death flag from the two dead enemies.
+
+101
+00:33:06,420 --> 00:33:13,400
+Otherwise we get XP/Gold messages that we would have to confirm manually
+
+102
+00:33:15,860 --> 00:33:21,340
+6. Return to the normal code execution
+
+103
+00:33:30,280 --> 00:33:33,680
+Still three minutes to go
+
+104
+00:36:31,380 --> 00:36:37,360
+We placed the shield in the first slot, so Locke attacks with it, then the X-Ether
+
+105
+00:36:40,380 --> 00:36:42,960
+End
+
