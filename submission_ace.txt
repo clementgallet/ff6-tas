@@ -1,0 +1,243 @@
+[module:youtube|v=axnOPbBt_qs]
+
+* Emulator: lsnes rr2-beta23
+* Rom: Final Fantasy VI (J)
+* Aims for fastest time
+* Manipulates luck
+* Executes arbitrary code
+* Features mid-frame resets
+* Corrupts save data
+* Ends input *early*
+
+We have shown a proof of concept for arbitrary code execution in the Japanese version of the game a year ago. However, it requires to gather one of several items that are only available in the late game (after about 2 hours of run), so we let it go. After the discovery of the game over glitch that lead to the [2922M|latest TAS], featuring 15 boring minutes of game overs, we were eager to find another route that could beat this time and be more fun to watch. This is where we remembered of the mid-frame reset technique used in a couple of published TAS, that might lead to getting these items much quicker. This was the beginning of our third work on this game.
+
+!! Glitch leading to ACE
+
+The glitch used to get control over the game is based on the Japanese exclusive equip glitch. This glitch allows you to equip any item in any equipment slot. To equip an item on a weapon slot, for example, you must:
+
+* get rid of every weapon that a character can equip, so that the equip menu on that slot would show an empty list
+* place the item in the last (256th) slot
+* select "Optimize"
+
+In unassisted speedruns, this glitch is used to equip item that raises your defence and/or magic defence drastically. In this TAS, we are using this glitch on the weapon slot.
+
+During a fight, when you attack with a weapon, the game loads the weapon graphics properties from address {{$ECE400+8*id}} into {{$623B-$6242}}. Address {{$6240}}, which stores if the weapon has a short or long range animation, takes values between 0 and 4. According to this value, the game calls a different function, as shown below: 
+
+ $C1/C217 AD 40 62    LDA $6240       load $6240
+ $C1/C21A 29 7F       AND #$7F               
+ $C1/C21C 0A          ASL A           multiply by 2
+ $C1/C21D AA          TAX
+ $C1/C21E 7C 21 C2    JMP ($C221,x)   call one of the routines below
+ 
+ Function pointers:
+ $C1/C221 34 C2                       call $C1/C234 when $6240 = 0
+ $C1/C223 47 C2                       call $C1/C247 when $6240 = 1
+ $C1/C225 2B C2                       call $C1/C22B when $6240 = 2
+ $C1/C227 C0 C2                       call $C1/C2C0 when $6240 = 3
+ $C1/C229 21 C3                       call $C1/C321 when $6240 = 4
+
+However, for items that are not weapons, address {{$6240}} can store any value, so that the jump instruction above leads to many wrong addresses. Among all the wrong jumps, the case with address {{$6240 = 0x07}} (weapons X-Ether, Gold Hairpin, Czarina Ring or Charm Bangle) is interesting because the game jumps to address C1/8D7A which starts with instruction:
+
+ $C1/8D7A 1B          TCS      Push accumulator to the stack pointer
+
+This instructions corrupts the stack, and will lead us to full control of the game (detailed in another section). The goal of the present TAS is then to collect one of the four items to trigger the ending sequence.
+
+!! Mid-frame reset
+
+As said in the introduction, all of the four items are only found in the later part of the game. This is why we will be using mid-frame reset to corrupt the game saves. Here are the different options that we used in this TAS:
+
+! World Map teleport
+
+World Map coordinates are stored in addresses {{$1F60}} (X) and {{$1F61}} (Y). We can save once at coordinates (X1,Y1), then move to coordinates (X2,Y2), save on the same slot and reset just after the game overwrites the X coordinate. We will be left with a savefile containing (X2,Y1) stored coordinates. This helps to move rather freely around the World Map. Only a few spots are not accessible with this technique (Thamasa and the Triangle Island).
+
+! World Map teleport anywhere
+
+This technique can only be used once. The principle is that the game starts inside a town (Narshe) for the first 15 minutes, and the World Map coordinates are never written until you leave the town. They contain uninitialized values until then. When you exit Narshe normally, the game copies the parent coordinates ({{$1F6B-$1F6C}}) to current coordinates ({{$1F60-$1F61}}). We can manage to load the uninitialized values as coordinates:
+
+* We save before leaving Narshe in slot 1
+* We save in the World Map in slot 2
+* We load slot 1
+* We save on slot 2 and reset just after {{$1F61}} is overwritten
+* When loading slot 2, we will be on the World Map at coordinates corresponding to the uninitialized values.
+
+In lsnes emulator, it is possible to manipulate the initial RAM values to some extend by setting the value of the Real Time Clock that acts as a seed. The first value of the RAM is set to the lower byte of the RTC, and each consecutive value is generated using a recursion formula:
+ value = (value >> 1) ^ (((value & 1) - 1) & 0xedb88320)
+
+! Map warping
+
+Map id is stored as a 2-bytes value in address {{$1F64}}. Using the same principle as with coordinates, it is possible to warp to a new map by using one byte from one map and another byte from a second map. Here is the list of (hopefully) all save points in the World of Balance, and the new interesting maps that we have access using this trick:
+
+ Save Points                    | Map ID
+ -----------------WoB-----------------------------------
+ World Map                      | 0000
+ Narshe cave entrance           | 0029
+ Narshe cave                    | 0032
+ Narshe class room              | 006B
+ Mt. Kolts                      | 0067
+ Returners Hideout              | 006E
+ Lete River                     | 0072
+ Lete River                     | 0072
+ Scenario Choice                | 0009
+ Phantom Train - Tail           | 0092
+ Phantom Train - Middle         | 0095
+ Phantom Train - Head           | 0099
+ South Figaro - Duncan          | 0054
+ South Figaro - Basement        | 0058
+ Narshe - Kefka fight           | 0016
+ Magitek Factory                | 010E
+ Minecart                       | 0110
+ Magitek Factory Exit           | 00F0
+ Cave to the Sealed Gate        | 0182
+ Esper Cave                     | 0177
+ Floating Continent - beginning | 018A
+ Floating Continent - cave      | 0166
+ -----------------New-----------------------------------
+ Daryll's Tomb                  | 0129
+ Fanatics Tower                 | 016B, 0167, 016E, 0172
+ Caves to the Ancient Castle    | 0192
+ Hidon's Cave                   | 0195
+ Kefka's Domain--Pipe Room      | 0199
+ Gogo's Room                    | 0116
+
+! Checksum
+
+The game has a mechanism to detected corrupted savefiles, so we have to bypass it. When saving, it computes the sum of all values of the savefile in a 2-bytes value ({{$1FFE-$1FFF}}) and stores it at the end of the savefile. When loading, it computes the checksum and compares to the stored value. If they differ, the savefile is considered as corrupted and cannot be loaded. To overcome this check, we have to modify values in our save so that the checksum match after the sub-frame reset. The easiest way to change a lot of values is to modify the colors of the different window themes.
+
+!! Route planning
+
+We investigated the quickest way to collect one of the four items (X-Ether, Gold Hairpin, Czarina Ring, Charm Bangle). The fastest route we found was to enter the Ancient Castle using map warping, where there is both an X-Ether and a Gold Hairpin. To enter the Ancient Castle, we need to save in a map with id {{01xx}} (we chose the Cave to the Sealed Gate) and in the Phantom Train. To enter the Phantom Train, we need both Sabin and Cyan in our team, otherwise the game will softlock. There are several ways to quickly get Cyan and Sabin in our team:
+* Manage to enter Narshe (using save corruption), and reach the snowfields where you can trigger the Kefka fight. At the end, you have a character selection screen and you can place Sabin and Cyan in your team. Estimated time: 6 minutes
+* Enter Zozo and climb to the top with Terra. After the cutscene, you have a character selection screen and you can place Sabin and Cyan in your team. Estimated time: 8-10 minutes
+* Go to the Imperial Camp and do the whole sequence. You will recruit Cyan and Sabin will be placed in your party as well. Estimated time: 10 minutes
+
+! Checksum bug
+
+The initial route we designed involved an early Narshe escape. When you load the game for the first time, it sets all values in the SRAM to 0. We could take this in our advantage because the map id of the World Map is {{0000}}. By reaching the first save point in Narshe and save/reset just before the map id is overwritten, we could produce a savefile that spawns you on the World Map. Then, we could enter Narshe again and trigger the Kefka at Narshe sequence. However, this did not work because of a flaw in the game programming.
+
+ C3/166D: 20D119    JSR $19D1      Calculate SRAM checksum and stores it in $E7
+ C3/1670: 20EB19    JSR $19EB      Determine if save file is corrupted:
+ | C3/19EB:	C220    	REP #$20      
+ | C3/19ED:	A5E7    	LDA $E7      Load calculated checksum
+ | C3/19EF:	CDFE1F  	CMP $1FFE    Does it match this file's checksum?
+ | C3/19F2:	D002    	BNE $19F6    Branch if they match
+ | C3/19F4:	8001    	BRA $19F7    Skip next instruction if they match
+ | C3/19F6:	7B      	TDC          If they don't match, set A to 0
+ | C3/19F7:	A8      	TAY          Transfer A to Y
+ | C3/19F8:	E220    	SEP #$20
+ | C3/19FA:	60      	RTS
+ C3/1673: 8491      STY $91        Save result
+ C3/1675: F00B      BEQ $1682      Branch if result is 0: skip savefile
+
+The consequence of this code is that a savefile is considered as corrupted if the checksum does not match, or if the checksum is 0. In our case, because the checksum is stored at the end of the savefile, it will be 0. So even if the checksum is correct, we won't be able to load the savefile.
+
+! Current Route
+
+The first option was still thought to be possible at first, by transferring the event flags from one save at the beginning of Narshe to another save after Narshe. However, we could not do it in practice because we could not control the checksum to match between both savefiles. This was due to the fast that we have 11 Moogles joining the party, which modifies a lot of values in memory and greatly altered the checksum. With only the game options at our disposal to modify the checksum we are limited by the range we can access. In the end, we had to drop this quickest choice.
+
+The current route uses the third way of recruiting Sabin and Cyan. Although it may be slower, the Imperial Camp is very close to the Phantom Train, meaning less travelling. Also, Zozo's boss would be difficult to beat quickly because of an underleveled party.
+
+!! Arbitrary code execution
+
+! The setup
+
+As started in the previous section, attacking with one of the four items corrupts the stack by setting the stack pointer to {{0x000E}}. The game eventually reaches a {{RTS}} instruction, so that it loads the 16-bit integer {{$0F-$10}} and jumps to {{C1/$10$0F}}. In address {{$0E-$0F}} we have the &16-bit battle timer. It starts at 0 at the beginning of the battle and increases by one every frame. In {{$10}} we have a temporary variable that, at the moment of the glitch, can be either {{0x0E}}, {{0xAE}}, {{0xCE}} or {{0xEE}}. In consequence, we can jump to any address {{C1/0Exx}}, {{C1/AExx}}, {{C1/CExx}} or {{C1/EExx}}.
+
+We are looking at jumping into RAM or SRAM, and this means getting out of the {{C1}} address bank. We only have limited options to leave this bank: executing jump instructions {{JSL (22)}} or {{JML (5C, DC)} that use a full 24-bit address; {{RTL (6B)}} is also possible. By examining if there is such instruction in our accessible addresses, we found a good candidate:
+
+ $C1/CEC7 5C 6F 60 AE  JML $AE606F
+
+This jumps to address {{$006F}} in SRAM, which is just before Shadow's name ({{$0071-$0076}}). This is not part of the game code but starts at the middle on a instruction. By carefully renaming Shadow's name, we could jump to some other places where we have full control of the values, like the color windows. But there is a drawback to this: address {{$0F}} must contain {{0xC7}}, meaning we have to wait 14 minutes in the fight.
+
+So we looked at another solution, by trying to increase our range of accessible addresses. Now we looked at any jump and return instructions. Because {{$10}} and subsequent addresses correspond to temporary variables, we looked at some places where {{$11}} and {{$12}} were modified, so that we can hit another {{RTS}} instruction to jump to {{C1/$12$11}} and reach other places in the {{C1}} bank. We found a really interesting piece of code:
+
+ $C1/CE59 A5 0E       LDA $0E    Loads battle counter $0E-$0F
+ $C1/CE5B 0A          ASL A      Multiply by 2
+ $C1/CE5C 85 12       STA $12    Stores in $12-$13
+ $C1/CE5E 0A          ASL A      Multiply by 2
+ $C1/CE5F 0A          ASL A      Multiply by 2
+ $C1/CE60 85 10       STA $10    Stores in $10-$11
+
+By choosing carefully our battle counter value, we could control {{$11}} and {{$12}} and jump to new addresses. Now, we looked again at {{JML}} and {{JSL}} instructions but in the whole {{C1}} bank. We found the instruction {{JSL $A41E20}} at several places in the code ({{C1/A21C}}, {{C1/A239}}, {{C1/A256}}, {{C1/A276}}, {{C1/A30C}}, {{C1/A32E}}, {{C1/A3CE}}, {{C1/A3E6}}). This jumps to the RAM address {{$7E1E20}} which is at the beginning of a unused segment. Like with the teleport anywhere trick, we manipulated the first two values to be {{70 98    BVS $1DBA}}, so that we jump to {{$1DBA}} which is at the end of the menu configuration. Then we change the colors to write in $1DBA {{70 A5   BVS $1D61}} to jump again at the beginning of the menu color configuration, because we won't have enough place to write the full code.
+
+Before writing the full code, we must be sure to be able to execute the above {{JML}} instruction. If we write the battle counter in binary and look at the obtained values for {{$11}} and {{$12}}, we get:
+
+ Battle counter:  $0F = ...abcde | $0E = fghijklm
+ Return address:  $12 = ghijklm0 | $11 = abcdefgh
+
+So the constraints on the return address are:
+* the high byte must be even
+* the highest 2 bits of the high byte must match the lowest 2 bits of the low byte
+
+We found one good match which is:
+
+ Battle counter: 01000110 11010001 (4A 51)
+ Return address: 10100010 01010010 (A2 52)
+
+The game will first jump to {{C1/CE4A}}, which will execute the code above that writes to {{$11}} and {{$12}}. The, when hitting the {{RTS}} instruction, it will jump to the value in {{$11-$12 + 1}}:
+ $C1/A253 0E 00 A7      ASL $A700
+ $C1/A256 22 20 1E A4   JSL $A41E20
+ 
+Thanks to this new setup, we lowered the time to wait to {{0x4A51 = 19025}} frames, or 5 minutes and 17 seconds. However, because TAS convention times to the last input, we will use this to our advantage.
+
+! The code
+
+We need to write a code that will trigger the ending without any input to do. In details, we need to:
+* Place the ending sequence as the current event
+* Fix the ending softlock that occurs when skipping the transition to the World of Ruin
+* Fix the stack pointer value
+* Finish the fight
+* Avoid any message at the end of the fight that would need to be manually confirmed
+* Return to the normal game execution
+
+Also, there are some constraints on writing using window colors: every other value must be < 0x80.
+
+Here is the following code used in this TAS:
+
+ C2 20          REP #$20              16-bit accumulator
+ A9 62 13       LDA #$1362            Loads the ending sequence event address
+ 18             CLC                   Dummy
+ 9D 4E 12       STA $124E,x [$12E5]   Set event pointer to the ending
+ 0C 4F 1F       TSB $1F4F             Set NPC event bit to avoid the ending softlock
+ 69 7F 02       ADC #$027F            A = 0x15E1
+ 1B             TCS                   Fix the stack pointer
+ E2 20          SEP #$20              8-bit accumulator
+ 9E 59 3E       STZ $3E59,x [$3EF0]   Unflag enemy 1 death, to avoid an XP/Gold message
+ 7B             TDC                   A = 0
+ 9E 5B 3E       STZ $3E5B,x [$3EF2]   Unflag enemy 2 death, to avoid an XP/Gold message
+ 3A             DEC                   A = 0xFF
+ 8D 3A 3A       STA $3A3A             Remove enemies from the fight
+ 5C EA 4D C1    JML $C14DEA           Or any address in the C1 bank that leads to a RTS
+
+! The fight
+
+We need to find a fight where eventually the holder of the glitched weapon will attack at exactly 19025 frames after the beginning. There are several way to provoke an attack without any input, the one we chose was to get the character muddled, so that he automatically executes a random command. We found the Goblin enemy in the Cave to the Ancient Castle that has a very interesting battle script:
+
+  If 1 or fewer monster(s) (total) is/are remaining:
+    Rand. spell: L.5 Doom or L.4 Flare or L.3 Muddle
+    Rand. spell: Blaze or Nothing or Nothing
+
+Locke is naturally level 6 as we are doing Narshe with Terra level 4 and he gets a +2 bonus when joining, so we will be the holder of the glitched weapon as he is sensible to L.3 Muddle. The battle strat is then to kill all enemies except one Goblin, and manipulate his RNG so that we will cast L.3 Muddle and Locke will attack at the exact moment to trigger ACE. This took about 20 hours of work actually, more than the entire rest of the TAS, but the result is good.
+
+
+!! Special Thanks
+
+* __bover_87__ for posting the enemy battle script
+* __ff6hacking website__ for centralizing and showing new data on ff6
+
+!! Suggested screenshots
+
+Frames 125522, 129091, 131130 and 190385
+
+[http://i.imgur.com/VDUlm6w.png] [http://i.imgur.com/K61oX5f.png] [http://i.imgur.com/mt51Xzp.png] [http://i.imgur.com/iBwOub3.png]
+
+----
+
+[user:ars4326]: Replaced movie file with updated version that accesses full ending.  Claimed for judging!
+
+[user:ars4326]: Hello, Keylie and Kadmony.  Fantastic work on executing this unique 'game end glitch' method, as well as listing out the intricate details in the submission text.  The minor strategic optimizations made during battles were a treat to watch, as well.  
+
+Altogether though, as others have expressed in the thread, there honestly just isn't too many ways that one can make 52 straight game-overs entertaining.  The payoff of watching the glitched ending (with more Moogles, this time around!) was indeed enjoyable, but the more repetitive 15+ minute lead-in must also be considered.  Outstanding work, nonetheless!
+
+Accepting for publication to the Vault!
+
+[user:fsvgm777]: Processing.
