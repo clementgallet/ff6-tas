@@ -1,0 +1,264 @@
+1
+00:00:10,380 --> 00:00:15,260
+This is a Tool-Assisted Speedrun created by Kadmony and Keylie
+
+2
+00:00:17,100 --> 00:00:21,660
+The final time is 29:23.58, using 12114 rerecords
+
+3
+00:00:23,880 --> 00:00:28,880
+This is a 8661 frames (144 s) improvement over the previous TAS
+
+4
+00:00:31,040 --> 00:00:35,720
+You can visit tasvideos.org for more information
+
+5
+00:00:38,440 --> 00:00:43,640
+The ending is triggered the same way as the previous TAS
+
+6
+00:00:46,720 --> 00:00:51,760
+In short, arbitrary code is executed using a glitched weapon attack
+
+7
+00:00:55,280 --> 00:01:02,720
+This requires the Japanese version of the game, where an exclusive glitch allows you to equip any item
+
+8
+00:01:06,080 --> 00:01:12,640
+In this route, we need to attack with an X-Ether, found in the Ancient Castle
+
+9
+00:01:16,240 --> 00:01:24,080
+We access this place by combining the map id of the Cave to the Sealed Gate (0186) and the Phantom Train (0092)
+
+10
+00:01:28,160 --> 00:01:34,640
+This gives id 0192 which is the cave to the Ancient Castle
+
+11
+00:02:28,480 --> 00:02:35,280
+Battle Speed 6 (slowest), Message Speed 1 (fastest) and cursor on memory
+
+12
+00:02:55,680 --> 00:03:01,840
+We make one guard run away so that Terra gets just enough XP to reach level 4
+
+13
+00:04:24,400 --> 00:04:30,720
+The character levels for this fight are 4/2/3, which is lower than on the previous TAS (4/3/3)
+
+14
+00:04:31,920 --> 00:04:37,200
+So we need more manipulation of the damage variations to kill Whelk quickly
+
+15
+00:07:52,080 --> 00:07:56,640
+We make a first save here to store the event flags
+
+16
+00:13:12,640 --> 00:13:19,360
+We save inside Narshe to keep the uninitialized World Map coordinates in memory
+
+17
+00:13:20,160 --> 00:13:25,040
+We will be using these coordinates to teleport elsewhere in the World Map
+
+18
+00:13:26,080 --> 00:13:29,680
+We unequip both weapons, save and reset
+
+19
+00:13:32,160 --> 00:13:36,480
+We load the first save and overwrite the event flags of a newer save
+
+20
+00:13:40,400 --> 00:13:44,240
+We load again the other newer save and overwrite the party
+
+21
+00:13:49,040 --> 00:13:55,360
+We have build up a save outside Narshe with Terra/Locke party and events from the beginning of Narshe
+
+22
+00:13:56,960 --> 00:14:01,040
+This abnormal state allows us to freely enter Narshe
+
+23
+00:14:05,680 --> 00:14:09,920
+Lucky us, there are Sprint Shoes to sell in Narshe
+
+24
+00:14:11,120 --> 00:14:14,240
+We also need to sell both weapons for later
+
+25
+00:15:07,680 --> 00:15:13,040
+Now what happens if you reach the Narshe snowfield?
+
+26
+00:15:16,880 --> 00:15:21,920
+It sounds like you can trigger the Kefka at Narshe section!
+
+27
+00:15:23,760 --> 00:15:28,080
+Except Terra and Locke, all other characters are Moogles
+
+28
+00:16:07,360 --> 00:16:12,960
+We use a trick using a combination of menu and party switching to disable a battle trigger
+
+29
+00:16:16,320 --> 00:16:21,760
+Because of how underleveled we are, we will be using two desperation attacks
+
+30
+00:19:40,080 --> 00:19:45,360
+We can now choose our team and recruit Sabin and Cyan
+
+31
+00:20:25,120 --> 00:20:30,160
+We save here for a future warp
+
+32
+00:20:31,520 --> 00:20:35,760
+We transfer our team into an old Narshe savefile
+
+33
+00:20:37,120 --> 00:20:44,240
+Then we overwrite the World Map coords to uninitialized ones, because we didn't leave Narshe in this savefile
+
+34
+00:20:46,320 --> 00:20:52,880
+We manipulated these uninitialized values to be close to the Cave to the Sealed Gate
+
+35
+00:20:56,640 --> 00:21:02,160
+We cannot get past the camp in front of the cave, so we use X coord overwriting
+
+36
+00:21:22,000 --> 00:21:28,240
+We make a detour by Doma Castle to register specific party coordinates in memory
+
+37
+00:21:29,520 --> 00:21:34,400
+This will later get us inbounds when warping to the cave before Ancient Castle
+
+38
+00:21:35,600 --> 00:21:40,640
+More X coord overwriting to reach the Cave to the Sealed Gate
+
+39
+00:22:33,440 --> 00:22:40,320
+We previously set the Message Speed to 2, so that we can escape certain fights like this one much quicker
+
+40
+00:22:41,840 --> 00:22:51,520
+There is a general rule: if you have more characters than enemies, only some of your party will escape quickly in preemptive fights
+
+41
+00:22:52,320 --> 00:22:57,440
+The rest of your party will escape 2 seconds later
+
+42
+00:22:58,960 --> 00:23:05,200
+By setting the Message Speed to a higher value, the game has enough time to make the whole party escape
+
+43
+00:23:11,040 --> 00:23:15,840
+We save the map id in a slot file, and load the previous one
+
+44
+00:23:23,360 --> 00:23:29,520
+There is a little shortcut to access the Phantom Train, by entering the forest from the south
+
+45
+00:24:39,680 --> 00:24:43,360
+We recruit a Ghost because he has an insta-kill attack
+
+46
+00:24:44,400 --> 00:24:47,680
+We overwrite only one byte of the map id
+
+47
+00:27:09,120 --> 00:27:11,520
+Grabbing the X-Ether
+
+48
+00:27:23,520 --> 00:27:28,080
+It is faster the scroll an item down during a fight than in the menu
+
+49
+00:27:29,920 --> 00:27:33,840
+Equipping the X-Ether using the Optimize glitch
+
+50
+00:27:35,200 --> 00:27:39,040
+Writing the code that triggers the ending using colors
+
+51
+00:27:39,920 --> 00:27:46,320
+This part has been optimized compared to the previous TAS by carefully choosing the right offset to minimize color changes (-7 sec)
+
+52
+00:27:54,320 --> 00:28:00,000
+The Goblin enemy has a special script when alone, so we kill one quickly with the Ghost
+
+53
+00:28:00,880 --> 00:28:05,440
+We buffer some long animations to delay the action of the other enemy
+
+54
+00:28:12,560 --> 00:28:18,240
+We need the Goblin to cast Muddle on Locke, so that he attacks with the glitched weapon
+
+55
+00:28:19,680 --> 00:28:24,080
+This must occur at a specific frame, after about 5 minutes of fight
+
+56
+00:28:25,440 --> 00:28:31,040
+We manipulate the chain of attacks of the enemy so that he call Muddle as late as possible while not killing Locke
+
+57
+00:28:32,400 --> 00:28:35,760
+Our custom code that will be executed consists on:
+
+58
+00:28:36,880 --> 00:28:40,080
+1. Store the ending address in the event pointer
+
+59
+00:28:40,880 --> 00:28:43,680
+2. Set a flag to remove the ending softlock
+
+60
+00:28:44,560 --> 00:28:50,240
+This softlock happens when you trigger the ending without entering the World of Ruin
+
+61
+00:28:51,040 --> 00:28:54,560
+3. Fix the stack that has been corrupted by the glitch
+
+62
+00:28:55,440 --> 00:29:00,000
+4. Remove all enemies from the fight. It triggers the end of the fight
+
+63
+00:29:00,880 --> 00:29:04,240
+5. Remove the Death flag from the dead enemy
+
+64
+00:29:05,120 --> 00:29:10,000
+Otherwise we get XP/Gold messages that we would have to confirm manually
+
+65
+00:29:11,040 --> 00:29:13,600
+6. Return to the normal code execution
+
+66
+00:29:24,720 --> 00:29:27,440
+End of inputs!
+
