@@ -1,0 +1,37 @@
+[module:youtube|v=Po-kw96T4lg]
+
+* Emulator: lsnes rr2-beta23
+* Rom: Final Fantasy VI (J)
+* Aims for fastest time
+* Manipulates luck
+* Executes arbitrary code
+* Features mid-frame resets
+* Corrupts save data
+* Ends input early
+
+Here is an improvement of 8661 frames from the [5145S|previous submission], thanks to a route change. Most of the tricks and glitches leading to ACE are identical to the previous submission, so we will only describe the changes in the present text. Comments are embedded in the above video and are available [https://raw.githubusercontent.com/clementgallet/ff6-tas/master/ff6_ace_v2_captions.srt|here].
+
+!! Route change
+
+To reach the Phantom Forest, Sabin and Cyan are mandatory. We choose in this TAS another way for them to join the team, by doing the Kefka at Narshe section. Normally, when you leave Narshe the first time with Locke, you cannot enter Narshe again until much later after the 3 scenarios. However, if you overwrite the events flags stored in the savefile with the ones from the beginning of the game before Locke joins, you can freely enter Narshe. By heading north to the snowfield, you will be able to trigger the fight against Kefka. After that, you can form your team, which contains Sabin and Cyan. Because they did not actually join the team yet, they are replaced by their Moogle placeholder. After that, the route is pretty much the same.
+
+!! Executed code
+
+The code executed to trigger the ending was improved a bit. We were very lucky this time to encounter the Goblin*2 fight, so we only had to kill one enemy, which shortened the code.
+
+  3A             DEC                   A = 0xFF
+  9E 55 3E       STZ $3E55,x [$3EEC]   Unflag enemy death, to avoid an XP/Gold message
+  0C 3A 3A       TSB $3A3A             Remove enemies from the fight
+  C2 20          REP #$20              16-bit accumulator
+  A9 62 13       LDA #$1362            Loads the ending sequence event address
+  0C 4F 1F       TSB $1F4F             Set NPC event bit to avoid the ending softlock
+  9D 4E 12       STA $124E,x [$12E5]   Set event pointer to the ending
+  69 7F 02       ADC #$027F            A = 0x15E1
+  1B             TCS                   Fix the stack pointer
+  5C C9 18 C1    JML $C118C9           An address in the C1 bank that contains SEP #$20 then RTS
+
+Also, the offset in the color configuration to write this code was optimized to minimize the number of color values to change. Both changes accounted for a total improvement of 7 seconds.
+
+!! Suggested screenshots
+
+Frames 62280, 95655

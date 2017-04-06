@@ -1,0 +1,188 @@
+1
+00:00:14,940 --> 00:00:19,920
+This is a Tool-Assisted Speedrun created by エディ, kadmony, keylie and pirohiko
+
+2
+00:00:21,200 --> 00:00:25,580
+The final time is 24:33.26, using 23592 rerecords
+
+3
+00:00:27,280 --> 00:00:32,060
+This TAS uses the 52 gameover glitch to trigger the ending
+
+4
+00:00:33,540 --> 00:00:37,960
+This glitch has been documented in a previous submission on tasvideos.org website
+
+5
+00:00:39,800 --> 00:00:46,440
+In short, after dying 52 times in the world map, the game loads a corrupted value of the event pointer
+
+6
+00:00:48,520 --> 00:00:55,560
+By manipulated this value, we can execute script code from RAM, and trigger the ending
+
+7
+00:02:38,840 --> 00:02:42,840
+Message Speed to 1, Cursor to Memory, remove all equipment from Terra
+
+8
+00:02:43,640 --> 00:02:47,000
+We need Terra to die without loosing much time
+
+9
+00:02:47,960 --> 00:02:51,040
+The best fight to do that is this Pincer attack
+
+10
+00:03:11,380 --> 00:03:15,380
+We need one soldier to escape so the other one reaches level 3
+
+11
+00:03:17,140 --> 00:03:20,620
+This is mandatory for the quick Whelk fight
+
+12
+00:03:50,340 --> 00:03:54,200
+Terra level 4, Vicks level 2, Wedge level 3
+
+13
+00:04:10,960 --> 00:04:15,300
+This is a new trick: casting Def. with Terra speeds up the escape by 4 seconds
+
+14
+00:04:33,700 --> 00:04:40,080
+We need to walk extra steps at some point. Doing it here speeds up the ATB manipulation
+
+15
+00:04:44,540 --> 00:04:49,340
+Thanks to Battle Speed is 3, Whelk shell will take two turns before hiding
+
+16
+00:04:50,200 --> 00:04:53,660
+This allows Whelk head to fight twice
+
+17
+00:04:54,600 --> 00:04:59,600
+We need Terra to die in this fight, but she needs to do two attacks before being killed
+
+18
+00:05:10,540 --> 00:05:16,920
+We also must manipulate each attack to be of high damage in the value range
+
+19
+00:05:40,040 --> 00:05:43,080
+We setup the inventory for later
+
+20
+00:05:43,580 --> 00:05:47,540
+slot 2: Leather Hat, slot 4: Buckler, slots 0/1/3: empty
+
+21
+00:07:49,740 --> 00:07:54,260
+Terra is renamed "TE" to manipulate a savefile checksum later
+
+22
+00:08:23,280 --> 00:08:26,400
+We are going to escape Narshe through this door
+
+23
+00:08:27,660 --> 00:08:34,040
+There is currently a NPC blocking this door, but we will use the first savefile to overwrite it
+
+24
+00:08:35,280 --> 00:08:39,080
+We first need to reach the save point
+
+25
+00:08:54,740 --> 00:08:59,920
+It is crucial to trigger a fight next to the save point (hence the extra steps)
+
+26
+00:09:03,980 --> 00:09:07,820
+Slot 3 is our backup, slot 2 is the one we will work on
+
+27
+00:09:17,780 --> 00:09:22,000
+First, we overwrite the savefile until NPC addresses, and reset
+
+28
+00:09:23,240 --> 00:09:29,260
+We now have the Terra/Vicks/Wedge party, but we want the solo Terra party
+
+29
+00:09:30,980 --> 00:09:35,380
+So we overwrite the party addresses in slot 2 with the solo Terra party
+
+30
+00:09:36,700 --> 00:09:40,360
+At last, we need a dead Terra
+
+31
+00:09:44,080 --> 00:09:48,060
+So we load the first slot, and we overwrite the Terra status addresses
+
+32
+00:09:48,760 --> 00:09:53,420
+Thanks to the Terra renaming, the checksum of the second savefile is correct!
+
+33
+00:09:55,580 --> 00:09:59,760
+Because the party is dead, we must not have a fight in this area
+
+34
+00:10:00,620 --> 00:10:04,600
+This is why we saved just after a fight
+
+35
+00:10:13,580 --> 00:10:17,820
+Our inventory is nearly complete, we only need the Mithril Pike
+
+36
+00:10:18,740 --> 00:10:21,900
+In the previous TAS we got it from Mog
+
+37
+00:10:22,640 --> 00:10:25,780
+Fortunately, we can buy it in Narshe!
+
+38
+00:10:27,080 --> 00:10:31,220
+We also need the hex value of our money to end with C4
+
+39
+00:10:32,980 --> 00:10:36,500
+The easiest value to reach is 452 (1C4)
+
+40
+00:10:39,300 --> 00:10:44,060
+We just have to buy 4 Mithril Pike and sell 1 Sleeping Bag
+
+41
+00:10:54,520 --> 00:10:58,520
+We are almost ready, we need to save outside just before a fight
+
+42
+00:10:59,500 --> 00:11:03,540
+And inputting the code to trigger the ending using menu colors
+
+43
+00:11:05,580 --> 00:11:09,360
+Thanks to Eddie, there is a faster way to start the 52 gameovers
+
+44
+00:11:10,740 --> 00:11:15,680
+If you die against the monster-in-a-box fight, it will count as 3 fights
+
+45
+00:11:37,140 --> 00:11:40,500
+And now starts the remaining fights...
+
+46
+00:11:41,680 --> 00:11:45,520
+Having a dead party saves about 2 minutes
+
+47
+00:11:46,800 --> 00:11:50,920
+You can skip to 24min for the last fights
+
